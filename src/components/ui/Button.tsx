@@ -9,10 +9,10 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-primary text-white active:bg-primary-dark',
-  secondary: 'bg-white text-gray-800 border border-gray-300',
-  danger: 'bg-red-600 text-white active:bg-red-700',
-  ghost: 'bg-transparent text-primary',
+  primary: 'bg-gold text-black active:bg-gold-dark',
+  secondary: 'bg-surface text-gold border border-gold/40',
+  danger: 'bg-red-700 text-white active:bg-red-800',
+  ghost: 'bg-transparent text-gold',
 }
 
 const sizes: Record<Size, string> = {
@@ -23,7 +23,7 @@ const sizes: Record<Size, string> = {
 export function Button({ variant = 'primary', size = 'md', className = '', ...props }: Props) {
   return (
     <button
-      className={`rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`rounded-xl font-bold tracking-wide shadow-md shadow-black/40 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     />
   )

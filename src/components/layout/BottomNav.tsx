@@ -10,7 +10,7 @@ const items = [
 
 export function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gold/20 bg-surface">
       <div className="mx-auto flex max-w-md">
         {items.map((item) => (
           <NavLink
@@ -18,7 +18,7 @@ export function BottomNav() {
             to={item.to}
             end={item.to === '/'}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${isActive ? 'text-primary font-semibold' : 'text-gray-500'}`
+              `flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${isActive ? 'text-gold font-semibold' : 'text-gray-500'}`
             }
           >
             <span className="text-xl">{item.icon}</span>

@@ -8,15 +8,15 @@ export default function Inicio() {
       <div className="flex flex-col gap-3">
         <Card>
           <p className="text-sm text-gray-500">Ventas</p>
-          <p className="text-2xl font-bold">S/ 0.00</p>
+          <p className="text-2xl font-bold text-gold">S/ 0.00</p>
         </Card>
         <Card>
           <p className="text-sm text-gray-500">Productos vendidos</p>
-          <p className="text-2xl font-bold">0</p>
+          <p className="text-2xl font-bold text-gold">0</p>
         </Card>
         <Card>
           <p className="text-sm text-gray-500">Productos con poco stock</p>
-          <p className="text-2xl font-bold">0</p>
+          <p className="text-2xl font-bold text-gold">0</p>
         </Card>
       </div>
     </AppLayout>
