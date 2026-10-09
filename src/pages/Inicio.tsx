@@ -7,24 +7,27 @@ import { round2 } from '../utils/money'
 import { todayISO } from '../utils/ids'
 
 export default function Inicio() {
+  // Igual que en Caja: se envuelve en un objeto para distinguir "cargando" de "no hay caja".
   const openRegister = useLiveQuery(async () => {
     const regs = await db.cashRegisters.where('status').equals('abierta').toArray()
-    return regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0]
+    return { register: regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0] ?? null }
   }, [])
 
+  const register = openRegister?.register
+
   const cash = useLiveQuery(async () => {
-    if (!openRegister) return undefined
-    const sales = (await db.sales.where('registerId').equals(openRegister.id).toArray()).filter((s) => !s.anulada)
+    if (!register) return undefined
+    const sales = (await db.sales.where('registerId').equals(register.id).toArray()).filter((s) => !s.anulada)
     const efectivo = round2(sales.filter((s) => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0))
-    return { sales: sales.length, efectivo, expected: round2(openRegister.openingAmount + efectivo) }
-  }, [openRegister?.id])
+    return { sales: sales.length, efectivo, expected: round2(register.openingAmount + efectivo) }
+  }, [register?.id])
 
   const stats = useLiveQuery(async () => {
     const sales = (await db.sales.where('date').equals(todayISO()).toArray()).filter((s) => !s.anulada)
     const items = await db.saleItems.toArray()
     const todaySaleIds = new Set(sales.map((s) => s.id))
     const soldToday = items.filter((i) => todaySaleIds.has(i.saleId)).reduce((s, i) => s + i.quantity, 0)
-    const products = await db.products.filter((p) => p.active).toArray()
+    const products = await db.products.filter((p) => p.active && !p.deleted).toArray()
     const variants = await db.productVariants.toArray()
     let low = 0
     for (const p of products) {
@@ -44,18 +47,18 @@ export default function Inicio() {
       <Link to="/caja" className="mb-4 block">
         <div
           className={`rounded-2xl border p-4 ${
-            openRegister
+            register
               ? 'border-cta-text/40 bg-cta/15'
               : 'border-danger/40 bg-danger/10'
           }`}
         >
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-bold uppercase tracking-wider ${openRegister ? 'text-cta-text' : 'text-danger'}`}>
-              {openRegister ? 'Caja abierta' : 'Caja cerrada'}
+            <p className={`text-xs font-bold uppercase tracking-wider ${register ? 'text-cta-text' : 'text-danger'}`}>
+              {register ? 'Caja abierta' : 'Caja cerrada'}
             </p>
             <span className="text-xs text-fg-mute">Ver caja →</span>
           </div>
-          {openRegister ? (
+          {register ? (
             <>
               <p className="mt-1 text-2xl font-bold text-fg">S/ {(cash?.expected ?? 0).toFixed(2)}</p>
               <p className="text-sm text-fg-mute">

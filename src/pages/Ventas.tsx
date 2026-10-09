@@ -34,7 +34,7 @@ export default function Ventas() {
   const [openNew, setOpenNew] = useState(false)
 
   const products = useLiveQuery(async () => {
-    const all = await db.products.filter((p) => p.active).toArray()
+    const all = await db.products.filter((p) => p.active && !p.deleted).toArray()
     const variants = await db.productVariants.toArray()
     return all.flatMap((p) =>
       variants.filter((v) => v.productId === p.id).map((v) => ({ product: p, variant: v })),

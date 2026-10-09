@@ -241,7 +241,7 @@ async function resolveLines(lines: SaleLineInput[]): Promise<ResolvedLine[]> {
     if (!variant) throw new Error('Producto no encontrado')
     const product = await db.products.get(variant.productId)
     if (!product) throw new Error('Producto no encontrado')
-    if (!product.active) throw new Error(`"${product.name}" ya no está disponible`)
+    if (!product.active || product.deleted) throw new Error(`"${product.name}" ya no está disponible`)
     if (variant.quantity < quantity) {
       throw new Error(`No hay suficiente stock de "${product.name}" (disponibles: ${variant.quantity})`)
     }
