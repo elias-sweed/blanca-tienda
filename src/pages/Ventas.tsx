@@ -9,6 +9,7 @@ import { Modal } from '../components/ui/Modal'
 import { useToast } from '../components/ui/Toast'
 import { db } from '../lib/db'
 import { registerSale } from '../services/sales'
+import { createProduct } from '../services/inventory'
 import { todayISO } from '../utils/ids'
 
 const PAYMENTS = [
@@ -58,10 +59,18 @@ export default function Ventas() {
 
 function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { show } = useToast()
+  const [mode, setMode] = useState<'select' | 'new'>('select')
   const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<{ variantId: string; name: string; price: number; quantity: number } | null>(null)
+  const [selected, setSelected] = useState<{ variantId: string; name: string; price: number; size?: string; color?: string; quantity: number } | null>(null)
   const [qty, setQty] = useState('1')
   const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
+
+  // New product form
+  const [newName, setNewName] = useState('')
+  const [newPrice, setNewPrice] = useState('')
+  const [newSize, setNewSize] = useState('')
+  const [newColor, setNewColor] = useState('')
+  const [newQty, setNewQty] = useState('1')
 
   const products = useLiveQuery(async () => {
     const all = await db.products.filter((p) => p.active).toArray()
@@ -77,26 +86,68 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
 
   const total = selected ? selected.price * (Number(qty) || 0) : 0
 
-  async function confirm() {
+  async function confirmExisting() {
     if (!selected) return
     const n = Number(qty)
     if (!n || n <= 0) return show('Cantidad inválida', 'error')
     try {
       await registerSale({ variantId: selected.variantId, quantity: n, paymentMethod: method })
       show('Venta registrada')
-      setSelected(null)
-      setQty('1')
-      setSearch('')
+      resetForm()
       onClose()
     } catch (e) {
       show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
     }
   }
 
+  async function confirmNew() {
+    if (!newName.trim()) return show('Escribe el nombre del producto', 'error')
+    const p = Number(newPrice)
+    if (!p || p <= 0) return show('Escribe un precio válido', 'error')
+    const n = Number(newQty)
+    if (!n || n <= 0) return show('Cantidad inválida', 'error')
+    try {
+      const { variant } = await createProduct({
+        name: newName,
+        price: p,
+        size: newSize,
+        color: newColor,
+        quantity: n,
+      })
+      await registerSale({ variantId: variant.id, quantity: n, paymentMethod: method })
+      show('Venta registrada')
+      resetForm()
+      onClose()
+    } catch (e) {
+      show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
+    }
+  }
+
+  function resetForm() {
+    setMode('select')
+    setSearch('')
+    setSelected(null)
+    setQty('1')
+    setMethod('efectivo')
+    setNewName('')
+    setNewPrice('')
+    setNewSize('')
+    setNewColor('')
+    setNewQty('1')
+  }
+
   return (
     <Modal open={open} title="Nueva venta" onClose={onClose}>
-      {!selected ? (
+      {mode === 'select' ? (
         <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <Button variant="secondary" className="flex-1" onClick={() => setMode('select')}>
+              Producto existente
+            </Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setMode('new')}>
+              Producto nuevo
+            </Button>
+          </div>
           <Input label="Buscar producto" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ej: polo negro" />
           <div className="flex max-h-64 flex-col gap-2 overflow-auto">
             {filtered.length === 0 && <p className="text-sm text-gray-500">Sin resultados.</p>}
@@ -104,21 +155,68 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
               <button
                 key={variant.id}
                 className="flex items-center justify-between rounded-xl border border-gold/20 bg-night p-3 text-left"
-                onClick={() => setSelected({ variantId: variant.id, name: product.name, price: product.price, quantity: variant.quantity })}
+                onClick={() => setSelected({ variantId: variant.id, name: product.name, price: product.price, size: variant.size, color: variant.color, quantity: variant.quantity })}
               >
                 <span>
                   <span className="block font-bold">{product.name}</span>
-                  <span className="text-sm text-gray-500">{[variant.size, variant.color].filter(Boolean).join(' · ')} · {variant.quantity} disponibles</span>
+                  <span className="text-sm text-gray-500">
+                    {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+                  </span>
                 </span>
-                <span className="font-bold text-gold">S/ {product.price.toFixed(2)}</span>
+                <span className="text-right">
+                  <span className="block font-bold text-gold">S/ {product.price.toFixed(2)}</span>
+                  <span className="text-xs text-gray-500">{variant.quantity} disp.</span>
+                </span>
               </button>
             ))}
           </div>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <Button variant="secondary" className="flex-1" onClick={() => setMode('select')}>
+              Producto existente
+            </Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setMode('new')}>
+              Producto nuevo
+            </Button>
+          </div>
+          <Input label="Nombre del producto" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Polo básico" />
+          <Input label="Precio de venta (S/)" type="number" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Talla" value={newSize} onChange={(e) => setNewSize(e.target.value)} placeholder="M" />
+            <Input label="Color" value={newColor} onChange={(e) => setNewColor(e.target.value)} placeholder="Negro" />
+          </div>
+          <Input label="Cantidad" type="number" value={newQty} onChange={(e) => setNewQty(e.target.value)} />
+          <div>
+            <p className="mb-1 text-sm font-semibold text-gold">Método de pago</p>
+            <div className="grid grid-cols-3 gap-2">
+              {PAYMENTS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setMethod(p.id)}
+                  className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-gold bg-gold text-black' : 'border-gold/30 bg-night text-gray-300'}`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-center text-2xl font-bold text-gold">
+            Total: S/ {(Number(newPrice) || 0) * (Number(newQty) || 0) > 0 ? ((Number(newPrice) || 0) * (Number(newQty) || 0)).toFixed(2) : '0.00'}
+          </p>
+          <Button size="lg" onClick={confirmNew}>Registrar venta</Button>
+          <Button variant="ghost" onClick={() => setMode('select')}>Elegir producto existente</Button>
+        </div>
+      )}
+
+      {mode === 'select' && selected && (
+        <div className="mt-4 flex flex-col gap-3 border-t border-gold/20 pt-4">
           <Card>
             <p className="text-lg font-bold">{selected.name}</p>
+            <p className="text-sm text-gray-500">
+              {[selected.size && `Talla: ${selected.size}`, selected.color && `Color: ${selected.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+            </p>
             <p className="text-sm text-gray-500">{selected.quantity} disponibles · S/ {selected.price.toFixed(2)} c/u</p>
           </Card>
           <Input label="Cantidad" type="number" value={qty} onChange={(e) => setQty(e.target.value)} />
@@ -137,7 +235,7 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
             </div>
           </div>
           <p className="text-center text-2xl font-bold text-gold">Total: S/ {total.toFixed(2)}</p>
-          <Button size="lg" onClick={confirm}>Confirmar venta</Button>
+          <Button size="lg" onClick={confirmExisting}>Confirmar venta</Button>
           <Button variant="ghost" onClick={() => setSelected(null)}>Elegir otro producto</Button>
         </div>
       )}

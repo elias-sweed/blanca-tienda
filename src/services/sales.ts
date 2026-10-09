@@ -1,6 +1,7 @@
 import { db } from '../lib/db'
 import { newId, nowISO, todayISO } from '../utils/ids'
 import type { Sale } from '../types/models'
+import { getOpenRegister } from './cash'
 
 export async function registerSale(data: {
   variantId: string
@@ -8,6 +9,9 @@ export async function registerSale(data: {
   paymentMethod: Sale['paymentMethod']
 }) {
   const now = nowISO()
+  const openRegister = await getOpenRegister()
+  if (!openRegister) throw new Error('No hay una caja abierta. Abre caja primero.')
+
   await db.transaction('rw', db.sales, db.saleItems, db.productVariants, db.products, db.inventoryMovements, async () => {
     const variant = await db.productVariants.get(data.variantId)
     if (!variant) throw new Error('Producto no encontrado')
@@ -24,6 +28,7 @@ export async function registerSale(data: {
       total: subtotal,
       paymentMethod: data.paymentMethod,
       date: todayISO(),
+      registerId: openRegister.id,
       createdAt: now,
       updatedAt: now,
       syncStatus: 'pending',

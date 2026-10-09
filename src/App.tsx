@@ -5,6 +5,7 @@ import Ventas from './pages/Ventas'
 import Inventario from './pages/Inventario'
 import Caja from './pages/Caja'
 import Mas from './pages/Mas'
+import Historial from './pages/Historial'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/caja" element={<Caja />} />
         <Route path="/mas" element={<Mas />} />
+        <Route path="/historial" element={<Historial />} />
       </Routes>
       <BottomNav />
     </BrowserRouter>

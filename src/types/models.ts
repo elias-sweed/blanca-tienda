@@ -31,6 +31,7 @@ export interface Sale extends BaseEntity {
   paymentMethod: 'efectivo' | 'yape' | 'plin' | 'tarjeta' | 'otro'
   date: string // YYYY-MM-DD
   note?: string
+  registerId?: string
 }
 
 export interface SaleItem extends BaseEntity {

@@ -47,7 +47,7 @@ export default function Inventario() {
               <div>
                 <p className="text-lg font-bold">{product.name}</p>
                 <p className="text-sm text-gray-500">
-                  {variants.map((v) => [v.size, v.color].filter(Boolean).join(' · ')).join(', ') || 'Sin talla/color'}
+                  {variants.map((v) => [v.size && `Talla: ${v.size}`, v.color && `Color: ${v.color}`].filter(Boolean).join(' · ')).join(', ') || 'Sin talla/color'}
                 </p>
               </div>
               <div className="text-right">
@@ -56,7 +56,7 @@ export default function Inventario() {
               </div>
             </div>
             <div className="mt-3 flex items-center justify-between text-sm text-gray-400">
-              <span>S/ {product.price.toFixed(2)}</span>
+              <span>Precio: S/ {product.price.toFixed(2)}</span>
               {quantity <= product.stockMin && <span className="text-red-400">Poco stock</span>}
             </div>
             {variants[0] && (
@@ -65,7 +65,7 @@ export default function Inventario() {
                 className="mt-3 w-full"
                 onClick={() => setEntryFor({ variantId: variants[0].id, name: product.name })}
               >
-                + Entrada de mercadería
+                + Agregar stock
               </Button>
             )}
           </Card>
@@ -77,7 +77,7 @@ export default function Inventario() {
         target={entryFor}
         onClose={() => setEntryFor(null)}
         onDone={() => {
-          show('Entrada registrada')
+          show('Stock agregado')
           setEntryFor(null)
         }}
       />
@@ -111,7 +111,7 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
   return (
     <Modal open={open} title="Agregar producto" onClose={onClose}>
       <div className="flex flex-col gap-3">
-        <Input label="Nombre" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Polo básico" />
+        <Input label="Nombre del producto" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Polo básico" />
         <Input label="Precio de venta (S/)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
         <div className="grid grid-cols-2 gap-3">
           <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="M" />
@@ -144,10 +144,10 @@ function EntryModal({ target, onClose, onDone }: { target: { variantId: string; 
   }
 
   return (
-    <Modal open={!!target} title={`Entrada: ${target?.name ?? ''}`} onClose={onClose}>
+    <Modal open={!!target} title={`Agregar stock: ${target?.name ?? ''}`} onClose={onClose}>
       <div className="flex flex-col gap-3">
         <Input label="Cantidad que ingresa" type="number" value={qty} onChange={(e) => setQty(e.target.value)} />
-        <Button size="lg" onClick={save}>Registrar entrada</Button>
+        <Button size="lg" onClick={save}>Agregar stock</Button>
       </div>
     </Modal>
   )
