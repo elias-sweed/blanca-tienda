@@ -138,33 +138,7 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
 
   return (
     <Modal open={open} title="Nueva venta" onClose={onClose}>
-      {!showNewForm ? (
-        <div className="flex flex-col gap-3">
-          <div className="flex max-h-64 flex-col gap-2 overflow-auto">
-            {(products ?? []).map(({ product, variant }) => (
-              <button
-                key={variant.id}
-                className="flex items-center justify-between rounded-xl border border-gold/20 bg-night p-3 text-left"
-                onClick={() => setSelected({ variantId: variant.id, name: product.name, price: product.price, size: variant.size, color: variant.color, quantity: variant.quantity })}
-              >
-                <span>
-                  <span className="block font-bold">{product.name}</span>
-                  <span className="text-sm text-gray-500">
-                    {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
-                  </span>
-                </span>
-                <span className="text-right">
-                  <span className="block font-bold text-gold">S/ {product.price.toFixed(2)}</span>
-                  <span className="text-xs text-gray-500">{variant.quantity} disp.</span>
-                </span>
-              </button>
-            ))}
-          </div>
-          <Button variant="secondary" onClick={() => setShowNewForm(true)}>
-            + Producto nuevo
-          </Button>
-        </div>
-      ) : (
+      {showNewForm ? (
         <div className="flex flex-col gap-3">
           <Input label="Nombre del producto" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Polo básico" />
           <Input label="Precio (S/)" type="number" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} />
@@ -191,7 +165,7 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
           <div className="rounded-xl border border-gold/20 bg-night p-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Total</span>
-              <span className="font-bold text-gold">S/ {((Number(newPrice) || 0) * (Number(newQty) || 0)).toFixed(2)}</span>
+              <span className="font-bold text-gold">S/ {total.toFixed(2)}</span>
             </div>
             {change !== null && change >= 0 && (
               <div className="mt-1 flex justify-between text-sm">
@@ -209,10 +183,8 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
           <Button size="lg" onClick={confirmNew}>Confirmar venta</Button>
           <Button variant="ghost" onClick={() => setShowNewForm(false)}>Volver</Button>
         </div>
-      )}
-
-      {!showNewForm && selected && (
-        <div className="mt-4 flex flex-col gap-3 border-t border-gold/20 pt-4">
+      ) : selected ? (
+        <div className="flex flex-col gap-3">
           <Card>
             <p className="text-lg font-bold">{selected.name}</p>
             <p className="text-sm text-gray-500">
@@ -256,6 +228,32 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
           </div>
           <Button size="lg" onClick={confirmExisting}>Confirmar venta</Button>
           <Button variant="ghost" onClick={() => setSelected(null)}>Elegir otro producto</Button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex max-h-64 flex-col gap-2 overflow-auto">
+            {(products ?? []).map(({ product, variant }) => (
+              <button
+                key={variant.id}
+                className="flex items-center justify-between rounded-xl border border-gold/20 bg-night p-3 text-left"
+                onClick={() => setSelected({ variantId: variant.id, name: product.name, price: product.price, size: variant.size, color: variant.color, quantity: variant.quantity })}
+              >
+                <span>
+                  <span className="block font-bold">{product.name}</span>
+                  <span className="text-sm text-gray-500">
+                    {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+                  </span>
+                </span>
+                <span className="text-right">
+                  <span className="block font-bold text-gold">S/ {product.price.toFixed(2)}</span>
+                  <span className="text-xs text-gray-500">{variant.quantity} disp.</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <Button variant="secondary" onClick={() => setShowNewForm(true)}>
+            + Producto nuevo
+          </Button>
         </div>
       )}
     </Modal>
