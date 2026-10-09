@@ -9,10 +9,13 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-gold text-black active:bg-gold-dark',
-  secondary: 'bg-surface text-gold border border-gold/40',
-  danger: 'bg-red-700 text-white active:bg-red-800',
-  ghost: 'bg-transparent text-gold',
+  primary:
+    'bg-berry text-cream border border-plum shadow-lg shadow-cosmos/60 active:bg-plum active:scale-[0.98]',
+  secondary:
+    'bg-barossa text-gold border border-berry/60 active:bg-plum/60 active:scale-[0.98]',
+  danger:
+    'bg-red-800 text-cream border border-red-900 active:bg-red-950 active:scale-[0.98]',
+  ghost: 'bg-transparent text-gold border border-transparent active:bg-berry/20',
 }
 
 const sizes: Record<Size, string> = {

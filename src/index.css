@@ -1,17 +1,79 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 @import "tailwindcss";
 
+/* ============================================================
+   Summer Raspberry
+   Chocolate cosmos #46000D · Rosewood #5E0009 · Tyrian #720137
+   Palatinate #590054 · Barossa #42002E
+   ============================================================ */
 @theme {
-  --color-gold: #d4af37;
-  --color-gold-dark: #b8962e;
-  --color-night: #0f0f13;
-  --color-surface: #1a1a20;
+  /* Base de la paleta */
+  --color-cosmos: #46000d;
+  --color-rosewood: #5e0009;
+  --color-tyrian: #720137;
+  --color-palatinate: #590054;
+  --color-barossa: #42002e;
+
+  /* Superficies */
+  --color-night: #46000d;
+  --color-surface: #5e0009;
+  --color-card: #42002e;
+
+  /* Acentos (texto y bordes) */
+  --color-gold: #e79cc0;
+  --color-gold-dark: #b8638f;
+  --color-berry: #720137;
+  --color-plum: #590054;
+
+  /* Texto */
+  --color-cream: #fbeef4;
+  --color-muted: #d3a9bd;
+
   --font-serif: "Playfair Display", Georgia, serif;
 }
 
+html {
+  background-color: #46000d;
+}
+
 body {
-  background-color: #0f0f13;
-  color: #e7e5df;
+  margin: 0;
+  background-color: #46000d;
+  background-image: linear-gradient(180deg, #46000d 0%, #42002e 55%, #590054 100%);
+  background-attachment: fixed;
+  color: #fbeef4;
   font-family: "Playfair Display", Georgia, serif;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Títulos dentro de las páginas: más marcados y con brillo */
+h1,
+h2 {
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 12px rgba(114, 1, 55, 0.55);
+}
+
+/* Números y montos: tabulares para que se lean alineados */
+.font-bold,
+.font-semibold {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: #720137;
+  color: #fbeef4;
+}
+
+/* Scroll discreto acorde al tema */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #46000d;
+}
+::-webkit-scrollbar-thumb {
+  background: #590054;
+  border-radius: 999px;
 }

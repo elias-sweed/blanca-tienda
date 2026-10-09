@@ -9,15 +9,18 @@ export function Input({ label, error, className = '', id, ...props }: Props) {
   const inputId = id ?? props.name ?? label
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={inputId} className="text-sm font-semibold text-gold">
+      <label
+        htmlFor={inputId}
+        className="text-xs font-bold uppercase tracking-wider text-muted"
+      >
         {label}
       </label>
       <input
         id={inputId}
-        className={`rounded-xl border border-gold/30 bg-surface px-4 py-3 text-base text-white placeholder-gray-500 focus:border-gold focus:outline-none ${className}`}
+        className={`w-full rounded-xl border border-plum bg-cosmos/70 px-4 py-3 text-base font-semibold text-cream placeholder-muted/60 focus:border-gold focus:bg-cosmos/90 focus:outline-none focus:ring-2 focus:ring-berry/40 ${className}`}
         {...props}
       />
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
     </div>
   )
 }

@@ -114,11 +114,11 @@ export default function Ventas() {
             {items.map(({ product, variant }) => (
               <Card key={variant.id} className="flex flex-col">
                 <p className="font-bold">{product.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted/80">
                   {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
                 </p>
                 <p className="mt-1 text-lg font-bold text-gold">S/ {product.price.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">{variant.quantity} disponibles</p>
+                <p className="text-xs text-muted/80">{variant.quantity} disponibles</p>
                 <Button
                   size="md"
                   className="mt-2 w-full"
@@ -142,10 +142,10 @@ export default function Ventas() {
             {outOfStock.map(({ product, variant }) => (
               <Card key={variant.id} className="flex flex-col opacity-60">
                 <p className="font-bold">{product.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted/80">
                   {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
                 </p>
-                <p className="mt-1 text-lg font-bold text-gray-500">S/ {product.price.toFixed(2)}</p>
+                <p className="mt-1 text-lg font-bold text-muted/80">S/ {product.price.toFixed(2)}</p>
                 <p className="text-xs text-red-400">No disponible</p>
                 <Button
                   size="md"
@@ -309,7 +309,7 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold">{d.name}</p>
-                  <p className="truncate text-xs text-gray-500">
+                  <p className="truncate text-xs text-muted/80">
                     S/ {Number(d.price).toFixed(2)} × {d.quantity}
                     {[d.size && ` · Talla ${d.size}`, d.color && ` · ${d.color}`].filter(Boolean).join('')}
                   </p>
@@ -394,7 +394,7 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
                 <button
                   key={p.id}
                   onClick={() => setMethod(p.id)}
-                  className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-gold bg-gold text-black' : 'border-gold/30 bg-night text-gray-300'}`}
+                  className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-berry bg-berry text-cream' : 'border-plum bg-cosmos/70 text-muted'}`}
                 >
                   {p.label}
                 </button>
@@ -415,7 +415,7 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
           {change !== null && change >= 0 && !insufficientPayment && (
             <div className="rounded-xl border border-green-500/30 bg-green-950/30 p-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Vuelto</span>
+                <span className="text-muted">Vuelto</span>
                 <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
               </div>
             </div>
@@ -473,10 +473,10 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold">{item.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted/80">
                   {[item.size && `Talla: ${item.size}`, item.color && `Color: ${item.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
                 </p>
-                <p className="text-sm text-gray-500">S/ {item.price.toFixed(2)} c/u</p>
+                <p className="text-sm text-muted/80">S/ {item.price.toFixed(2)} c/u</p>
                 <p className="mt-1 inline-block rounded-full bg-gold/20 px-2 py-0.5 text-xs font-bold text-gold">
                   {item.available} unidades
                 </p>
@@ -507,7 +507,7 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
                   <button
                     key={p.id}
                     onClick={() => setMethod(p.id)}
-                    className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-gold bg-gold text-black' : 'border-gold/30 bg-night text-gray-300'}`}
+                    className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-berry bg-berry text-cream' : 'border-plum bg-cosmos/70 text-muted'}`}
                   >
                     {p.label}
                   </button>
@@ -528,7 +528,7 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
             {change !== null && change >= 0 && !insufficientPayment && (
               <div className="rounded-xl border border-green-500/30 bg-green-950/30 p-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Vuelto</span>
+                  <span className="text-muted">Vuelto</span>
                   <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
                 </div>
               </div>

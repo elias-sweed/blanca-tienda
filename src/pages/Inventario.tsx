@@ -46,16 +46,16 @@ export default function Inventario() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-lg font-bold">{product.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted/80">
                   {variants.map((v) => [v.size && `Talla: ${v.size}`, v.color && `Color: ${v.color}`].filter(Boolean).join(' · ')).join(', ') || 'Sin talla/color'}
                 </p>
               </div>
               <div className="text-right">
                 <p className={`text-2xl font-bold ${quantity <= product.stockMin ? 'text-red-400' : 'text-gold'}`}>{quantity}</p>
-                <p className="text-xs text-gray-500">disponibles</p>
+                <p className="text-xs text-muted/80">disponibles</p>
               </div>
             </div>
-            <div className="mt-3 flex items-center justify-between text-sm text-gray-400">
+            <div className="mt-3 flex items-center justify-between text-sm text-muted">
               <span>Precio: S/ {product.price.toFixed(2)}</span>
               {quantity <= product.stockMin && <span className="text-red-400">Poco stock</span>}
             </div>

@@ -17,7 +17,11 @@ export default function Historial() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold capitalize ${tab === t ? 'bg-gold text-black' : 'bg-surface text-gray-400 border border-gold/20'}`}
+            className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold capitalize ${
+              tab === t
+                ? 'border-berry bg-berry text-cream'
+                : 'border-plum bg-barossa text-muted'
+            }`}
           >
             {t}
           </button>
@@ -45,11 +49,11 @@ function SalesHistory() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-bold">S/ {s.total.toFixed(2)}</p>
-              <p className="text-sm text-gray-500">{s.paymentMethod}</p>
+              <p className="text-sm text-muted/80">{s.paymentMethod}</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500">{s.date}</p>
-              <p className="text-xs text-gray-500">{new Date(s.createdAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-sm text-muted/80">{s.date}</p>
+              <p className="text-xs text-muted/80">{new Date(s.createdAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </div>
         </Card>
@@ -72,13 +76,13 @@ function MovementsHistory() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-bold">{m.productName}</p>
-              <p className="text-sm text-gray-500">{m.reason}</p>
+              <p className="text-sm text-muted/80">{m.reason}</p>
             </div>
             <div className="text-right">
               <p className={`font-bold ${m.quantity > 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {m.quantity > 0 ? '+' : ''}{m.quantity}
               </p>
-              <p className="text-xs text-gray-500">{new Date(m.createdAt).toLocaleString('es-PE')}</p>
+              <p className="text-xs text-muted/80">{new Date(m.createdAt).toLocaleString('es-PE')}</p>
             </div>
           </div>
         </Card>
@@ -101,13 +105,13 @@ function ClosuresHistory() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-bold">{c.date}</p>
-              <p className="text-sm text-gray-500">Efectivo: S/ {c.totalCash.toFixed(2)}</p>
+              <p className="text-sm text-muted/80">Efectivo: S/ {c.totalCash.toFixed(2)}</p>
             </div>
             <div className="text-right">
               <p className={`font-bold ${c.difference === 0 ? 'text-green-400' : c.difference > 0 ? 'text-blue-400' : 'text-red-400'}`}>
                 {c.difference === 0 ? 'Exacto' : c.difference > 0 ? `+S/ ${c.difference.toFixed(2)}` : `-S/ ${Math.abs(c.difference).toFixed(2)}`}
               </p>
-              <p className="text-xs text-gray-500">Esperado: S/ {c.expectedCash.toFixed(2)}</p>
+              <p className="text-xs text-muted/80">Esperado: S/ {c.expectedCash.toFixed(2)}</p>
             </div>
           </div>
         </Card>

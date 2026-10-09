@@ -24,17 +24,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const colors = {
-    success: 'bg-green-600',
-    error: 'bg-red-600',
-    info: 'bg-gray-800',
+    success: 'bg-barossa text-cream border-green-600/60',
+    error: 'bg-barossa text-red-200 border-red-700/70',
+    info: 'bg-rosewood text-cream border-plum',
   }
 
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      <div className="fixed bottom-20 left-0 right-0 z-50 flex flex-col items-center gap-2 px-4">
+      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4">
         {toasts.map((t) => (
-          <div key={t.id} className={`w-full max-w-sm rounded-xl px-4 py-3 text-center text-white shadow-lg ${colors[t.type]}`}>
+          <div
+            key={t.id}
+            className={`w-full max-w-sm rounded-2xl border px-4 py-3 text-center font-semibold shadow-xl shadow-cosmos/80 ${colors[t.type]}`}
+          >
             {t.message}
           </div>
         ))}
