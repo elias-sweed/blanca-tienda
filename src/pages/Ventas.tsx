@@ -10,6 +10,7 @@ import { useToast } from '../components/ui/Toast'
 import { db } from '../lib/db'
 import { registerSale } from '../services/sales'
 import { createProduct } from '../services/inventory'
+import { newId } from '../utils/ids'
 
 const PAYMENTS = [
   { id: 'efectivo', label: 'Efectivo' },
@@ -41,10 +42,12 @@ export default function Ventas() {
     )
   }, [])
 
-  const outOfStock = (products ?? []).filter(({ variant }) => variant.quantity <= 0)
-  const inStock = (products ?? []).filter(({ variant }) => variant.quantity > 0)
+  type Item = NonNullable<typeof products>[number]
 
-  const categories = inStock.reduce<{ category: string; items: typeof inStock }>((acc, item) => {
+  const outOfStock: Item[] = (products ?? []).filter(({ variant }) => variant.quantity <= 0)
+  const inStock: Item[] = (products ?? []).filter(({ variant }) => variant.quantity > 0)
+
+  const categories = inStock.reduce<{ category: string; items: Item[] }[]>((acc, item) => {
     const cat = item.product.category || 'Sin categoría'
     const existing = acc.find((a) => a.category === cat)
     if (existing) existing.items.push(item)
@@ -55,7 +58,7 @@ export default function Ventas() {
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
-  function addToCart(item: (typeof products)[number]) {
+  function addToCart(item: Item) {
     const existing = cart.find((c) => c.variantId === item.variant.id)
     if (existing) {
       if (existing.quantity >= item.variant.quantity) return
@@ -96,7 +99,7 @@ export default function Ventas() {
     <AppLayout title="Ventas">
       <div className="mb-4">
         <Button size="lg" className="w-full" onClick={() => setOpenNew(true)}>
-          + Nuevo producto
+          + Producto nuevo
         </Button>
       </div>
 
@@ -184,43 +187,244 @@ export default function Ventas() {
   )
 }
 
+interface DraftProduct {
+  key: string
+  name: string
+  price: string
+  size: string
+  color: string
+  category: string
+  quantity: string
+}
+
 function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { show } = useToast()
+  const [drafts, setDrafts] = useState<DraftProduct[]>([])
+  const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [size, setSize] = useState('')
   const [color, setColor] = useState('')
   const [category, setCategory] = useState('')
   const [quantity, setQuantity] = useState('1')
+  const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
+  const [amountPaid, setAmountPaid] = useState('')
 
-  async function save() {
+  const total = drafts.reduce((sum, d) => sum + (Number(d.price) || 0) * (Number(d.quantity) || 0), 0)
+  const paid = Number(amountPaid) || 0
+  const change = paid > 0 ? paid - total : null
+  const insufficientPayment = paid > 0 && paid < total
+
+  function clearForm() {
+    setName(''); setPrice(''); setSize(''); setColor(''); setCategory(''); setQuantity('1')
+    setEditingKey(null)
+  }
+
+  function validateForm() {
     if (!name.trim()) return show('Escribe el nombre del producto', 'error')
     const p = Number(price)
     if (!p || p <= 0) return show('Escribe un precio válido', 'error')
     const n = Number(quantity)
     if (!n || n <= 0) return show('Cantidad inválida', 'error')
+    return true
+  }
+
+  function addDraft() {
+    if (!validateForm()) return
+    setDrafts([...drafts, { key: newId(), name: name.trim(), price, size, color, category, quantity }])
+    clearForm()
+  }
+
+  function copyLastDraft() {
+    const last = drafts[drafts.length - 1]
+    if (!last) return
+    setEditingKey(null)
+    setFormOpen(true)
+    setName(last.name); setPrice(last.price); setSize(last.size)
+    setCategory(last.category); setQuantity(last.quantity)
+    setColor('')
+  }
+
+  function startEdit(d: DraftProduct) {
+    setEditingKey(d.key)
+    setFormOpen(true)
+    setName(d.name); setPrice(d.price); setSize(d.size)
+    setColor(d.color); setCategory(d.category); setQuantity(d.quantity)
+  }
+
+  function updateDraft() {
+    if (!editingKey) return
+    if (!validateForm()) return
+    setDrafts(drafts.map((d) => d.key === editingKey ? { ...d, name: name.trim(), price, size, color, category, quantity } : d))
+    clearForm()
+  }
+
+  function removeDraft(key: string) {
+    setDrafts(drafts.filter((d) => d.key !== key))
+    if (editingKey === key) clearForm()
+  }
+
+  async function save() {
+    if (drafts.length === 0) return show('Agrega al menos un producto', 'error')
+    if (paid < total) return show('El monto pagado es menor al total', 'error')
     try {
-      await createProduct({ name, price: p, size, color, category, quantity: n })
-      show('Producto agregado')
-      setName(''); setPrice(''); setSize(''); setColor(''); setCategory(''); setQuantity('1')
+      for (const d of drafts) {
+        const { variant } = await createProduct({
+          name: d.name,
+          price: Number(d.price),
+          size: d.size,
+          color: d.color,
+          category: d.category,
+          quantity: Number(d.quantity) || 0,
+        })
+        await registerSale({
+          variantId: variant.id,
+          quantity: Number(d.quantity) || 0,
+          paymentMethod: method,
+          amountPaid: paid || undefined,
+        })
+      }
+      show(`${drafts.length} producto(s) agregado(s) y vendido(s)`)
+      setDrafts([])
+      clearForm()
+      setMethod('efectivo'); setAmountPaid('')
       onClose()
-    } catch {
-      show('No se pudo guardar', 'error')
+    } catch (e) {
+      show(e instanceof Error ? e.message : 'No se pudo guardar', 'error')
     }
   }
 
   return (
-    <Modal open={open} title="Nuevo producto" onClose={onClose}>
-      <div className="flex flex-col gap-3">
-        <Input label="Nombre del producto" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Polo básico" />
-        <Input label="Precio (S/)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="M" />
-          <Input label="Color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Negro" />
+    <Modal open={open} title="Agregar productos y vender" onClose={onClose}>
+      <div className="flex max-h-[75vh] flex-col gap-3 overflow-y-auto">
+        {drafts.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {drafts.map((d) => (
+              <div
+                key={d.key}
+                className={`flex items-center justify-between gap-2 rounded-xl border p-2.5 ${
+                  editingKey === d.key ? 'border-gold bg-gold/10' : 'border-gold/20 bg-surface'
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold">{d.name}</p>
+                  <p className="truncate text-xs text-gray-500">
+                    S/ {Number(d.price).toFixed(2)} × {d.quantity}
+                    {[d.size && ` · Talla ${d.size}`, d.color && ` · ${d.color}`].filter(Boolean).join('')}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <span className="mr-1 whitespace-nowrap text-sm font-bold text-gold">
+                    S/ {((Number(d.price) || 0) * (Number(d.quantity) || 0)).toFixed(2)}
+                  </span>
+                  <button
+                    onClick={() => startEdit(d)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gold/30 text-gold active:scale-95"
+                    aria-label="Editar producto"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    onClick={() => removeDraft(d.key)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/30 text-red-400 active:scale-95"
+                    aria-label="Eliminar producto"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {drafts.length > 0 && (
+          <Button variant="secondary" size="md" onClick={copyLastDraft}>
+            Copiar datos del último producto
+          </Button>
+        )}
+
+        <div className="flex flex-col rounded-xl border border-gold/20 bg-night/40">
+          <button
+            onClick={() => setFormOpen(!formOpen)}
+            className="flex items-center justify-between p-3 text-left"
+          >
+            <span className="font-bold text-gold">
+              {editingKey ? 'Editar producto' : '+ Producto nuevo'}
+            </span>
+            <span className="text-lg leading-none text-gold">{formOpen ? '▾' : '▸'}</span>
+          </button>
+
+          {formOpen && (
+            <div className="flex flex-col gap-2 p-3 pt-0">
+              <Input label="Nombre del producto" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Polo básico" />
+              <div className="grid grid-cols-2 gap-2">
+                <Input label="Precio (S/)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+                <Input label="Cantidad" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="M" />
+                <Input label="Color (opcional)" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Negro" />
+              </div>
+              <Input label="Categoría (opcional)" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ej: Polos" />
+              <div className="flex gap-2">
+                <Button variant="secondary" size="md" className="flex-1" onClick={editingKey ? updateDraft : addDraft}>
+                  {editingKey ? 'Guardar cambios' : '+ Agregar producto'}
+                </Button>
+                {editingKey && (
+                  <Button variant="ghost" size="md" onClick={clearForm}>Cancelar</Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-        <Input label="Categoría" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ej: Polos, Pantalones" />
-        <Input label="Cantidad" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-        <Button size="lg" onClick={save}>Guardar</Button>
+
+        <div className="flex flex-col gap-3 border-t border-gold/20 pt-3">
+          <div className="rounded-xl border border-gold/20 bg-night p-3">
+            <div className="flex justify-between text-lg font-bold">
+              <span className="text-gold">Total</span>
+              <span className="text-gold">S/ {total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1 text-sm font-semibold text-gold">Método de pago</p>
+            <div className="grid grid-cols-3 gap-2">
+              {PAYMENTS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setMethod(p.id)}
+                  className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-gold bg-gold text-black' : 'border-gold/30 bg-night text-gray-300'}`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
+
+          {insufficientPayment && (
+            <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-3">
+              <p className="text-center text-sm font-bold text-red-400">
+                El monto es menor al total. Faltan S/ {(total - paid).toFixed(2)}
+              </p>
+            </div>
+          )}
+
+          {change !== null && change >= 0 && !insufficientPayment && (
+            <div className="rounded-xl border border-green-500/30 bg-green-950/30 p-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Vuelto</span>
+                <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+
+          <Button size="lg" onClick={save} disabled={drafts.length === 0 || insufficientPayment}>
+            Confirmar venta
+          </Button>
+        </div>
       </div>
     </Modal>
   )
@@ -273,6 +477,9 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
                   {[item.size && `Talla: ${item.size}`, item.color && `Color: ${item.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
                 </p>
                 <p className="text-sm text-gray-500">S/ {item.price.toFixed(2)} c/u</p>
+                <p className="mt-1 inline-block rounded-full bg-gold/20 px-2 py-0.5 text-xs font-bold text-gold">
+                  {item.available} unidades
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => onUpdateQty(item.variantId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-gold border border-gold/30 font-bold">-</button>
