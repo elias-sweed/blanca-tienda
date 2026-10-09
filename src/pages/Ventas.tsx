@@ -10,7 +10,6 @@ import { useToast } from '../components/ui/Toast'
 import { db } from '../lib/db'
 import { registerSale } from '../services/sales'
 import { createProduct } from '../services/inventory'
-import { todayISO } from '../utils/ids'
 
 const PAYMENTS = [
   { id: 'efectivo', label: 'Efectivo' },
@@ -18,56 +17,21 @@ const PAYMENTS = [
   { id: 'plin', label: 'Plin' },
 ] as const
 
-export default function Ventas() {
-  const [openNew, setOpenNew] = useState(false)
-
-  const salesToday = useLiveQuery(
-    () => db.sales.where('date').equals(todayISO()).reverse().toArray(),
-    [],
-  )
-
-  return (
-    <AppLayout title="Ventas">
-      <Button size="lg" className="mb-4" onClick={() => setOpenNew(true)}>
-        + Nueva venta
-      </Button>
-
-      <h2 className="mb-2 text-lg font-bold text-gold">Ventas de hoy</h2>
-      <div className="flex flex-col gap-3">
-        {(salesToday ?? []).length === 0 && (
-          <EmptyState title="Aún no hay ventas hoy" description="Registra la primera venta del día." />
-        )}
-        {(salesToday ?? []).map((s) => (
-          <Card key={s.id}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold">S/ {s.total.toFixed(2)}</p>
-                <p className="text-sm text-gray-500">{s.paymentMethod}</p>
-              </div>
-              <p className="text-sm text-gray-500">{new Date(s.createdAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <NewSaleModal open={openNew} onClose={() => setOpenNew(false)} />
-    </AppLayout>
-  )
+interface CartItem {
+  variantId: string
+  name: string
+  price: number
+  size?: string
+  color?: string
+  quantity: number
+  available: number
 }
 
-function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function Ventas() {
   const { show } = useToast()
-  const [selected, setSelected] = useState<{ variantId: string; name: string; price: number; size?: string; color?: string; quantity: number } | null>(null)
-  const [qty, setQty] = useState('1')
-  const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
-  const [amountPaid, setAmountPaid] = useState('')
-
-  const [showNewForm, setShowNewForm] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newPrice, setNewPrice] = useState('')
-  const [newSize, setNewSize] = useState('')
-  const [newColor, setNewColor] = useState('')
-  const [newQty, setNewQty] = useState('1')
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [openCart, setOpenCart] = useState(false)
+  const [openNew, setOpenNew] = useState(false)
 
   const products = useLiveQuery(async () => {
     const all = await db.products.filter((p) => p.active).toArray()
@@ -77,185 +41,298 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
     )
   }, [])
 
-  const total = showNewForm
-    ? (Number(newPrice) || 0) * (Number(newQty) || 0)
-    : selected
-      ? selected.price * (Number(qty) || 0)
-      : 0
-  const paid = Number(amountPaid) || 0
-  const change = paid > 0 ? paid - total : null
+  const outOfStock = (products ?? []).filter(({ variant }) => variant.quantity <= 0)
+  const inStock = (products ?? []).filter(({ variant }) => variant.quantity > 0)
 
-  async function confirmExisting() {
-    if (!selected) return
-    const n = Number(qty)
-    if (!n || n <= 0) return show('Cantidad inválida', 'error')
-    try {
-      await registerSale({ variantId: selected.variantId, quantity: n, paymentMethod: method, amountPaid: paid || undefined })
-      show('Venta registrada')
-      resetForm()
-      onClose()
-    } catch (e) {
-      show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
+  const categories = inStock.reduce<{ category: string; items: typeof inStock }>((acc, item) => {
+    const cat = item.product.category || 'Sin categoría'
+    const existing = acc.find((a) => a.category === cat)
+    if (existing) existing.items.push(item)
+    else acc.push({ category: cat, items: [item] })
+    return acc
+  }, [])
+
+  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
+  function addToCart(item: (typeof products)[number]) {
+    const existing = cart.find((c) => c.variantId === item.variant.id)
+    if (existing) {
+      if (existing.quantity >= item.variant.quantity) return
+      setCart(cart.map((c) => c.variantId === item.variant.id ? { ...c, quantity: c.quantity + 1 } : c))
+    } else {
+      if (item.variant.quantity <= 0) return
+      setCart([...cart, {
+        variantId: item.variant.id,
+        name: item.product.name,
+        price: item.product.price,
+        size: item.variant.size,
+        color: item.variant.color,
+        quantity: 1,
+        available: item.variant.quantity,
+      }])
     }
   }
 
-  async function confirmNew() {
-    if (!newName.trim()) return show('Escribe el nombre del producto', 'error')
-    const p = Number(newPrice)
-    if (!p || p <= 0) return show('Escribe un precio válido', 'error')
-    const n = Number(newQty)
-    if (!n || n <= 0) return show('Cantidad inválida', 'error')
-    try {
-      const { variant } = await createProduct({
-        name: newName,
-        price: p,
-        size: newSize,
-        color: newColor,
-        quantity: n,
-      })
-      const newPaid = Number(amountPaid) || 0
-      await registerSale({ variantId: variant.id, quantity: n, paymentMethod: method, amountPaid: newPaid || undefined })
-      show('Venta registrada')
-      resetForm()
-      onClose()
-    } catch (e) {
-      show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
-    }
+  function removeFromCart(variantId: string) {
+    setCart(cart.filter((c) => c.variantId !== variantId))
   }
 
-  function resetForm() {
-    setSelected(null)
-    setQty('1')
-    setMethod('efectivo')
-    setAmountPaid('')
-    setShowNewForm(false)
-    setNewName('')
-    setNewPrice('')
-    setNewSize('')
-    setNewColor('')
-    setNewQty('1')
+  function updateCartQty(variantId: string, qty: number) {
+    if (qty <= 0) {
+      removeFromCart(variantId)
+      return
+    }
+    const item = cart.find((c) => c.variantId === variantId)
+    if (!item) return
+    if (qty > item.available) {
+      show(`Ya no hay más disponibles. Solo quedan ${item.available}. Agrega más en Inventario.`, 'error')
+      return
+    }
+    setCart(cart.map((c) => c.variantId === variantId ? { ...c, quantity: qty } : c))
   }
 
   return (
-    <Modal open={open} title="Nueva venta" onClose={onClose}>
-      {showNewForm ? (
-        <div className="flex flex-col gap-3">
-          <Input label="Nombre del producto" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Polo básico" />
-          <Input label="Precio (S/)" type="number" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} />
+    <AppLayout title="Ventas">
+      <div className="mb-4">
+        <Button size="lg" className="w-full" onClick={() => setOpenNew(true)}>
+          + Nuevo producto
+        </Button>
+      </div>
+
+      {categories.length === 0 && outOfStock.length === 0 && (
+        <EmptyState title="No hay productos" description="Agrega un producto para empezar a vender." />
+      )}
+
+      {categories.map(({ category, items }) => (
+        <div key={category} className="mb-6">
+          <h2 className="mb-2 text-lg font-bold text-gold">{category}</h2>
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Talla" value={newSize} onChange={(e) => setNewSize(e.target.value)} placeholder="M" />
-            <Input label="Color" value={newColor} onChange={(e) => setNewColor(e.target.value)} placeholder="Negro" />
-          </div>
-          <Input label="Cantidad" type="number" value={newQty} onChange={(e) => setNewQty(e.target.value)} />
-          <div>
-            <p className="mb-1 text-sm font-semibold text-gold">Método de pago</p>
-            <div className="grid grid-cols-3 gap-2">
-              {PAYMENTS.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setMethod(p.id)}
-                  className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-gold bg-gold text-black' : 'border-gold/30 bg-night text-gray-300'}`}
+            {items.map(({ product, variant }) => (
+              <Card key={variant.id} className="flex flex-col">
+                <p className="font-bold">{product.name}</p>
+                <p className="text-sm text-gray-500">
+                  {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+                </p>
+                <p className="mt-1 text-lg font-bold text-gold">S/ {product.price.toFixed(2)}</p>
+                <p className="text-xs text-gray-500">{variant.quantity} disponibles</p>
+                <Button
+                  size="md"
+                  className="mt-2 w-full"
+                  onClick={() => addToCart({ product, variant })}
                 >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
-          <div className="rounded-xl border border-gold/20 bg-night p-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Total</span>
-              <span className="font-bold text-gold">S/ {total.toFixed(2)}</span>
-            </div>
-            {change !== null && change >= 0 && (
-              <div className="mt-1 flex justify-between text-sm">
-                <span className="text-gray-400">Vuelto</span>
-                <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
-              </div>
-            )}
-            {change !== null && change < 0 && (
-              <div className="mt-1 flex justify-between text-sm">
-                <span className="text-gray-400">Falta</span>
-                <span className="font-bold text-red-400">S/ {Math.abs(change).toFixed(2)}</span>
-              </div>
-            )}
-          </div>
-          <Button size="lg" onClick={confirmNew}>Confirmar venta</Button>
-          <Button variant="ghost" onClick={() => setShowNewForm(false)}>Volver</Button>
-        </div>
-      ) : selected ? (
-        <div className="flex flex-col gap-3">
-          <Card>
-            <p className="text-lg font-bold">{selected.name}</p>
-            <p className="text-sm text-gray-500">
-              {[selected.size && `Talla: ${selected.size}`, selected.color && `Color: ${selected.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
-            </p>
-            <p className="text-sm text-gray-500">{selected.quantity} disponibles · S/ {selected.price.toFixed(2)} c/u</p>
-          </Card>
-          <Input label="Cantidad" type="number" value={qty} onChange={(e) => setQty(e.target.value)} />
-          <div>
-            <p className="mb-1 text-sm font-semibold text-gold">Método de pago</p>
-            <div className="grid grid-cols-3 gap-2">
-              {PAYMENTS.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setMethod(p.id)}
-                  className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-gold bg-gold text-black' : 'border-gold/30 bg-night text-gray-300'}`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
-          <div className="rounded-xl border border-gold/20 bg-night p-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Total</span>
-              <span className="font-bold text-gold">S/ {total.toFixed(2)}</span>
-            </div>
-            {change !== null && change >= 0 && (
-              <div className="mt-1 flex justify-between text-sm">
-                <span className="text-gray-400">Vuelto</span>
-                <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
-              </div>
-            )}
-            {change !== null && change < 0 && (
-              <div className="mt-1 flex justify-between text-sm">
-                <span className="text-gray-400">Falta</span>
-                <span className="font-bold text-red-400">S/ {Math.abs(change).toFixed(2)}</span>
-              </div>
-            )}
-          </div>
-          <Button size="lg" onClick={confirmExisting}>Confirmar venta</Button>
-          <Button variant="ghost" onClick={() => setSelected(null)}>Elegir otro producto</Button>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex max-h-64 flex-col gap-2 overflow-auto">
-            {(products ?? []).map(({ product, variant }) => (
-              <button
-                key={variant.id}
-                className="flex items-center justify-between rounded-xl border border-gold/20 bg-night p-3 text-left"
-                onClick={() => setSelected({ variantId: variant.id, name: product.name, price: product.price, size: variant.size, color: variant.color, quantity: variant.quantity })}
-              >
-                <span>
-                  <span className="block font-bold">{product.name}</span>
-                  <span className="text-sm text-gray-500">
-                    {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
-                  </span>
-                </span>
-                <span className="text-right">
-                  <span className="block font-bold text-gold">S/ {product.price.toFixed(2)}</span>
-                  <span className="text-xs text-gray-500">{variant.quantity} disp.</span>
-                </span>
-              </button>
+                  Agregar
+                </Button>
+              </Card>
             ))}
           </div>
-          <Button variant="secondary" onClick={() => setShowNewForm(true)}>
-            + Producto nuevo
-          </Button>
+        </div>
+      ))}
+
+      {outOfStock.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-red-400">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-sm">!</span>
+            Agotado
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {outOfStock.map(({ product, variant }) => (
+              <Card key={variant.id} className="flex flex-col opacity-60">
+                <p className="font-bold">{product.name}</p>
+                <p className="text-sm text-gray-500">
+                  {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+                </p>
+                <p className="mt-1 text-lg font-bold text-gray-500">S/ {product.price.toFixed(2)}</p>
+                <p className="text-xs text-red-400">No disponible</p>
+                <Button
+                  size="md"
+                  className="mt-2 w-full"
+                  disabled
+                >
+                  Agregar
+                </Button>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Floating Cart Button */}
+      <button
+        onClick={() => setOpenCart(true)}
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-2xl shadow-lg shadow-black/40 transition active:scale-95"
+      >
+        🛒
+        {cartCount > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
+            {cartCount}
+          </span>
+        )}
+      </button>
+
+      <NewProductModal open={openNew} onClose={() => setOpenNew(false)} />
+      <CartModal
+        open={openCart}
+        onClose={() => setOpenCart(false)}
+        cart={cart}
+        total={cartTotal}
+        onUpdateQty={updateCartQty}
+        onRemove={removeFromCart}
+        onClear={() => setCart([])}
+      />
+    </AppLayout>
+  )
+}
+
+function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { show } = useToast()
+  const [name, setName] = useState('')
+  const [price, setPrice] = useState('')
+  const [size, setSize] = useState('')
+  const [color, setColor] = useState('')
+  const [category, setCategory] = useState('')
+  const [quantity, setQuantity] = useState('1')
+
+  async function save() {
+    if (!name.trim()) return show('Escribe el nombre del producto', 'error')
+    const p = Number(price)
+    if (!p || p <= 0) return show('Escribe un precio válido', 'error')
+    const n = Number(quantity)
+    if (!n || n <= 0) return show('Cantidad inválida', 'error')
+    try {
+      await createProduct({ name, price: p, size, color, category, quantity: n })
+      show('Producto agregado')
+      setName(''); setPrice(''); setSize(''); setColor(''); setCategory(''); setQuantity('1')
+      onClose()
+    } catch {
+      show('No se pudo guardar', 'error')
+    }
+  }
+
+  return (
+    <Modal open={open} title="Nuevo producto" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <Input label="Nombre del producto" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Polo básico" />
+        <Input label="Precio (S/)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+        <div className="grid grid-cols-2 gap-3">
+          <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="M" />
+          <Input label="Color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Negro" />
+        </div>
+        <Input label="Categoría" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ej: Polos, Pantalones" />
+        <Input label="Cantidad" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+        <Button size="lg" onClick={save}>Guardar</Button>
+      </div>
+    </Modal>
+  )
+}
+
+function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear }: {
+  open: boolean
+  onClose: () => void
+  cart: CartItem[]
+  total: number
+  onUpdateQty: (variantId: string, qty: number) => void
+  onRemove: (variantId: string) => void
+  onClear: () => void
+}) {
+  const { show } = useToast()
+  const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
+  const [amountPaid, setAmountPaid] = useState('')
+
+  const paid = Number(amountPaid) || 0
+  const change = paid > 0 ? paid - total : null
+  const insufficientPayment = paid > 0 && paid < total
+
+  async function confirmSale() {
+    if (cart.length === 0) return
+    if (paid < total) return show('El monto pagado es menor al total', 'error')
+    try {
+      for (const item of cart) {
+        await registerSale({ variantId: item.variantId, quantity: item.quantity, paymentMethod: method, amountPaid: paid || undefined })
+      }
+      show('Venta registrada')
+      onClear()
+      setAmountPaid('')
+      setMethod('efectivo')
+      onClose()
+    } catch (e) {
+      show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
+    }
+  }
+
+  return (
+    <Modal open={open} title="Carrito" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        {cart.length === 0 && <EmptyState title="Carrito vacío" description="Agrega productos al carrito." />}
+        {cart.map((item) => (
+          <Card key={item.variantId}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold">{item.name}</p>
+                <p className="text-sm text-gray-500">
+                  {[item.size && `Talla: ${item.size}`, item.color && `Color: ${item.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+                </p>
+                <p className="text-sm text-gray-500">S/ {item.price.toFixed(2)} c/u</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => onUpdateQty(item.variantId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-gold border border-gold/30 font-bold">-</button>
+                <span className="w-8 text-center font-bold">{item.quantity}</span>
+                <button onClick={() => onUpdateQty(item.variantId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-gold border border-gold/30 font-bold">+</button>
+                <button onClick={() => onRemove(item.variantId)} className="ml-2 text-red-400 text-sm">Eliminar</button>
+              </div>
+            </div>
+          </Card>
+        ))}
+
+        {cart.length > 0 && (
+          <>
+            <div className="rounded-xl border border-gold/20 bg-night p-3">
+              <div className="flex justify-between text-lg font-bold">
+                <span className="text-gold">Total</span>
+                <span className="text-gold">S/ {total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-1 text-sm font-semibold text-gold">Método de pago</p>
+              <div className="grid grid-cols-3 gap-2">
+                {PAYMENTS.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setMethod(p.id)}
+                    className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-gold bg-gold text-black' : 'border-gold/30 bg-night text-gray-300'}`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
+
+            {insufficientPayment && (
+              <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-3">
+                <p className="text-center text-sm font-bold text-red-400">
+                  El monto es menor al total. Faltan S/ {(total - paid).toFixed(2)}
+                </p>
+              </div>
+            )}
+
+            {change !== null && change >= 0 && !insufficientPayment && (
+              <div className="rounded-xl border border-green-500/30 bg-green-950/30 p-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Vuelto</span>
+                  <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            <Button size="lg" onClick={confirmSale} disabled={insufficientPayment}>
+              Confirmar venta
+            </Button>
+          </>
+        )}
+      </div>
     </Modal>
   )
 }
