@@ -1,10 +1,24 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import { Link } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Card } from '../components/ui/Card'
 import { db } from '../lib/db'
+import { round2 } from '../utils/money'
 import { todayISO } from '../utils/ids'
 
 export default function Inicio() {
+  const openRegister = useLiveQuery(async () => {
+    const regs = await db.cashRegisters.where('status').equals('abierta').toArray()
+    return regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0]
+  }, [])
+
+  const cash = useLiveQuery(async () => {
+    if (!openRegister) return undefined
+    const sales = await db.sales.where('registerId').equals(openRegister.id).toArray()
+    const efectivo = round2(sales.filter((s) => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0))
+    return { sales: sales.length, efectivo, expected: round2(openRegister.openingAmount + efectivo) }
+  }, [openRegister?.id])
+
   const stats = useLiveQuery(async () => {
     const sales = await db.sales.where('date').equals(todayISO()).toArray()
     const items = await db.saleItems.toArray()
@@ -27,6 +41,33 @@ export default function Inicio() {
 
   return (
     <AppLayout title="Inicio">
+      <Link to="/caja" className="mb-4 block">
+        <div
+          className={`rounded-2xl border p-4 ${
+            openRegister
+              ? 'border-cta-text/40 bg-cta/15'
+              : 'border-danger/40 bg-danger/10'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <p className={`text-xs font-bold uppercase tracking-wider ${openRegister ? 'text-cta-text' : 'text-danger'}`}>
+              {openRegister ? 'Caja abierta' : 'Caja cerrada'}
+            </p>
+            <span className="text-xs text-fg-mute">Ver caja →</span>
+          </div>
+          {openRegister ? (
+            <>
+              <p className="mt-1 text-2xl font-bold text-fg">S/ {(cash?.expected ?? 0).toFixed(2)}</p>
+              <p className="text-sm text-fg-mute">
+                Efectivo esperado · {cash?.sales ?? 0} {cash?.sales === 1 ? 'venta' : 'ventas'}
+              </p>
+            </>
+          ) : (
+            <p className="mt-1 text-sm text-fg-soft">Abre la caja para poder registrar ventas</p>
+          )}
+        </div>
+      </Link>
+
       <h2 className="mb-3 text-lg font-semibold text-fg">Resumen de hoy</h2>
       <div className="flex flex-col gap-3">
         <Card>

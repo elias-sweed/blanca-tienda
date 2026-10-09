@@ -32,4 +32,11 @@ db.version(1).stores({
   syncQueue: '++id, table, recordId, createdAt',
 })
 
+// v2: índice en sales.registerId. Sin él, `where('registerId')` lanza
+// SchemaError y el módulo Caja no puede leer las ventas de la caja abierta.
+// Migración aditiva: solo crea el índice, no modifica ni borra datos.
+db.version(2).stores({
+  sales: 'id, date, paymentMethod, syncStatus, registerId',
+})
+
 export { db }

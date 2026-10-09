@@ -9,7 +9,6 @@ import { Modal } from '../components/ui/Modal'
 import { useToast } from '../components/ui/Toast'
 import { db } from '../lib/db'
 import { registerSale } from '../services/sales'
-import { createProduct } from '../services/inventory'
 import { newId } from '../utils/ids'
 
 const PAYMENTS = [
@@ -268,24 +267,21 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
 
   async function save() {
     if (drafts.length === 0) return show('Agrega al menos un producto', 'error')
-    if (paid < total) return show('El monto pagado es menor al total', 'error')
     try {
-      for (const d of drafts) {
-        const { variant } = await createProduct({
-          name: d.name,
-          price: Number(d.price),
-          size: d.size,
-          color: d.color,
-          category: d.category,
+      await registerSale({
+        lines: drafts.map((d) => ({
+          newProduct: {
+            name: d.name,
+            price: Number(d.price),
+            size: d.size,
+            color: d.color,
+            category: d.category,
+          },
           quantity: Number(d.quantity) || 0,
-        })
-        await registerSale({
-          variantId: variant.id,
-          quantity: Number(d.quantity) || 0,
-          paymentMethod: method,
-          amountPaid: paid || undefined,
-        })
-      }
+        })),
+        paymentMethod: method,
+        amountPaid: paid || undefined,
+      })
       show(`${drafts.length} producto(s) agregado(s) y vendido(s)`)
       setDrafts([])
       clearForm()
@@ -454,11 +450,12 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
 
   async function confirmSale() {
     if (cart.length === 0) return
-    if (paid < total) return show('El monto pagado es menor al total', 'error')
     try {
-      for (const item of cart) {
-        await registerSale({ variantId: item.variantId, quantity: item.quantity, paymentMethod: method, amountPaid: paid || undefined })
-      }
+      await registerSale({
+        lines: cart.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
+        paymentMethod: method,
+        amountPaid: paid || undefined,
+      })
       show('Venta registrada')
       onClear()
       setAmountPaid('')
