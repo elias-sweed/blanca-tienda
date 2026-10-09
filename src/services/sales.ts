@@ -7,6 +7,7 @@ export async function registerSale(data: {
   variantId: string
   quantity: number
   paymentMethod: Sale['paymentMethod']
+  amountPaid?: number
 }) {
   const now = nowISO()
   const openRegister = await getOpenRegister()
@@ -23,12 +24,17 @@ export async function registerSale(data: {
     const subtotal = unitPrice * data.quantity
     const saleId = newId()
 
+    const amountPaid = data.amountPaid
+    const change = amountPaid !== undefined ? amountPaid - subtotal : undefined
+
     await db.sales.add({
       id: saleId,
       total: subtotal,
       paymentMethod: data.paymentMethod,
       date: todayISO(),
       registerId: openRegister.id,
+      amountPaid: amountPaid,
+      change: change,
       createdAt: now,
       updatedAt: now,
       syncStatus: 'pending',

@@ -32,6 +32,8 @@ export interface Sale extends BaseEntity {
   date: string // YYYY-MM-DD
   note?: string
   registerId?: string
+  amountPaid?: number
+  change?: number
 }
 
 export interface SaleItem extends BaseEntity {

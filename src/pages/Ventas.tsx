@@ -16,8 +16,6 @@ const PAYMENTS = [
   { id: 'efectivo', label: 'Efectivo' },
   { id: 'yape', label: 'Yape' },
   { id: 'plin', label: 'Plin' },
-  { id: 'tarjeta', label: 'Tarjeta' },
-  { id: 'otro', label: 'Otro' },
 ] as const
 
 export default function Ventas() {
@@ -59,13 +57,12 @@ export default function Ventas() {
 
 function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { show } = useToast()
-  const [mode, setMode] = useState<'select' | 'new'>('select')
-  const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<{ variantId: string; name: string; price: number; size?: string; color?: string; quantity: number } | null>(null)
   const [qty, setQty] = useState('1')
   const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
+  const [amountPaid, setAmountPaid] = useState('')
 
-  // New product form
+  const [showNewForm, setShowNewForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPrice, setNewPrice] = useState('')
   const [newSize, setNewSize] = useState('')
@@ -80,18 +77,20 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
     )
   }, [])
 
-  const filtered = (products ?? []).filter(({ product }) =>
-    product.name.toLowerCase().includes(search.toLowerCase()),
-  )
-
-  const total = selected ? selected.price * (Number(qty) || 0) : 0
+  const total = showNewForm
+    ? (Number(newPrice) || 0) * (Number(newQty) || 0)
+    : selected
+      ? selected.price * (Number(qty) || 0)
+      : 0
+  const paid = Number(amountPaid) || 0
+  const change = paid > 0 ? paid - total : null
 
   async function confirmExisting() {
     if (!selected) return
     const n = Number(qty)
     if (!n || n <= 0) return show('Cantidad inválida', 'error')
     try {
-      await registerSale({ variantId: selected.variantId, quantity: n, paymentMethod: method })
+      await registerSale({ variantId: selected.variantId, quantity: n, paymentMethod: method, amountPaid: paid || undefined })
       show('Venta registrada')
       resetForm()
       onClose()
@@ -114,7 +113,8 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
         color: newColor,
         quantity: n,
       })
-      await registerSale({ variantId: variant.id, quantity: n, paymentMethod: method })
+      const newPaid = Number(amountPaid) || 0
+      await registerSale({ variantId: variant.id, quantity: n, paymentMethod: method, amountPaid: newPaid || undefined })
       show('Venta registrada')
       resetForm()
       onClose()
@@ -124,11 +124,11 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
   }
 
   function resetForm() {
-    setMode('select')
-    setSearch('')
     setSelected(null)
     setQty('1')
     setMethod('efectivo')
+    setAmountPaid('')
+    setShowNewForm(false)
     setNewName('')
     setNewPrice('')
     setNewSize('')
@@ -138,20 +138,10 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
 
   return (
     <Modal open={open} title="Nueva venta" onClose={onClose}>
-      {mode === 'select' ? (
+      {!showNewForm ? (
         <div className="flex flex-col gap-3">
-          <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1" onClick={() => setMode('select')}>
-              Producto existente
-            </Button>
-            <Button variant="secondary" className="flex-1" onClick={() => setMode('new')}>
-              Producto nuevo
-            </Button>
-          </div>
-          <Input label="Buscar producto" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ej: polo negro" />
           <div className="flex max-h-64 flex-col gap-2 overflow-auto">
-            {filtered.length === 0 && <p className="text-sm text-gray-500">Sin resultados.</p>}
-            {filtered.map(({ product, variant }) => (
+            {(products ?? []).map(({ product, variant }) => (
               <button
                 key={variant.id}
                 className="flex items-center justify-between rounded-xl border border-gold/20 bg-night p-3 text-left"
@@ -170,19 +160,14 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
               </button>
             ))}
           </div>
+          <Button variant="secondary" onClick={() => setShowNewForm(true)}>
+            + Producto nuevo
+          </Button>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1" onClick={() => setMode('select')}>
-              Producto existente
-            </Button>
-            <Button variant="secondary" className="flex-1" onClick={() => setMode('new')}>
-              Producto nuevo
-            </Button>
-          </div>
           <Input label="Nombre del producto" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: Polo básico" />
-          <Input label="Precio de venta (S/)" type="number" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} />
+          <Input label="Precio (S/)" type="number" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
             <Input label="Talla" value={newSize} onChange={(e) => setNewSize(e.target.value)} placeholder="M" />
             <Input label="Color" value={newColor} onChange={(e) => setNewColor(e.target.value)} placeholder="Negro" />
@@ -202,15 +187,31 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
               ))}
             </div>
           </div>
-          <p className="text-center text-2xl font-bold text-gold">
-            Total: S/ {(Number(newPrice) || 0) * (Number(newQty) || 0) > 0 ? ((Number(newPrice) || 0) * (Number(newQty) || 0)).toFixed(2) : '0.00'}
-          </p>
-          <Button size="lg" onClick={confirmNew}>Registrar venta</Button>
-          <Button variant="ghost" onClick={() => setMode('select')}>Elegir producto existente</Button>
+          <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
+          <div className="rounded-xl border border-gold/20 bg-night p-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Total</span>
+              <span className="font-bold text-gold">S/ {((Number(newPrice) || 0) * (Number(newQty) || 0)).toFixed(2)}</span>
+            </div>
+            {change !== null && change >= 0 && (
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-gray-400">Vuelto</span>
+                <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
+              </div>
+            )}
+            {change !== null && change < 0 && (
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-gray-400">Falta</span>
+                <span className="font-bold text-red-400">S/ {Math.abs(change).toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+          <Button size="lg" onClick={confirmNew}>Confirmar venta</Button>
+          <Button variant="ghost" onClick={() => setShowNewForm(false)}>Volver</Button>
         </div>
       )}
 
-      {mode === 'select' && selected && (
+      {!showNewForm && selected && (
         <div className="mt-4 flex flex-col gap-3 border-t border-gold/20 pt-4">
           <Card>
             <p className="text-lg font-bold">{selected.name}</p>
@@ -234,7 +235,25 @@ function NewSaleModal({ open, onClose }: { open: boolean; onClose: () => void })
               ))}
             </div>
           </div>
-          <p className="text-center text-2xl font-bold text-gold">Total: S/ {total.toFixed(2)}</p>
+          <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
+          <div className="rounded-xl border border-gold/20 bg-night p-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Total</span>
+              <span className="font-bold text-gold">S/ {total.toFixed(2)}</span>
+            </div>
+            {change !== null && change >= 0 && (
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-gray-400">Vuelto</span>
+                <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
+              </div>
+            )}
+            {change !== null && change < 0 && (
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-gray-400">Falta</span>
+                <span className="font-bold text-red-400">S/ {Math.abs(change).toFixed(2)}</span>
+              </div>
+            )}
+          </div>
           <Button size="lg" onClick={confirmExisting}>Confirmar venta</Button>
           <Button variant="ghost" onClick={() => setSelected(null)}>Elegir otro producto</Button>
         </div>
