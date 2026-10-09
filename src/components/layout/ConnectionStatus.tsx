@@ -6,11 +6,11 @@ export function ConnectionStatus() {
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
         online
-          ? 'border-green-600/50 bg-green-900/40 text-green-300'
-          : 'border-amber-600/50 bg-amber-900/40 text-amber-300'
+          ? 'border-cta-text/50 bg-cta/25 text-success'
+          : 'border-danger/50 bg-danger/10 text-danger'
       }`}
     >
-      <span className={`h-2 w-2 rounded-full ${online ? 'bg-green-400' : 'bg-amber-400'}`} />
+      <span className={`h-2 w-2 rounded-full ${online ? 'bg-cta-text' : 'bg-danger'}`} />
       {online ? 'Conectado' : 'Sin conexión'}
     </span>
   )

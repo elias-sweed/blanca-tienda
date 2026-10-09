@@ -27,20 +27,22 @@ export default function Inicio() {
 
   return (
     <AppLayout title="Inicio">
-      <h2 className="mb-3 text-lg font-semibold text-gold">Resumen de hoy</h2>
+      <h2 className="mb-3 text-lg font-semibold text-fg">Resumen de hoy</h2>
       <div className="flex flex-col gap-3">
         <Card>
-          <p className="text-sm text-muted/80">Ventas</p>
-          <p className="text-2xl font-bold text-gold">S/ {(stats?.total ?? 0).toFixed(2)}</p>
-          <p className="text-sm text-muted/80">{stats?.count ?? 0} ventas registradas</p>
+          <p className="text-sm text-fg-mute">Ventas</p>
+          <p className="text-2xl font-bold text-ruby-text">S/ {(stats?.total ?? 0).toFixed(2)}</p>
+          <p className="text-sm text-fg-mute">{stats?.count ?? 0} ventas registradas</p>
         </Card>
         <Card>
-          <p className="text-sm text-muted/80">Productos vendidos</p>
-          <p className="text-2xl font-bold text-gold">{stats?.sold ?? 0}</p>
+          <p className="text-sm text-fg-mute">Productos vendidos</p>
+          <p className="text-2xl font-bold text-accent-text">{stats?.sold ?? 0}</p>
         </Card>
         <Card>
-          <p className="text-sm text-muted/80">Productos con poco stock</p>
-          <p className="text-2xl font-bold text-gold">{stats?.low ?? 0}</p>
+          <p className="text-sm text-fg-mute">Productos con poco stock</p>
+          <p className={`text-2xl font-bold ${(stats?.low ?? 0) > 0 ? 'text-danger' : 'text-cta-text'}`}>
+            {stats?.low ?? 0}
+          </p>
         </Card>
       </div>
     </AppLayout>

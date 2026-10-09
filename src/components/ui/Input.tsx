@@ -11,16 +11,16 @@ export function Input({ label, error, className = '', id, ...props }: Props) {
     <div className="flex flex-col gap-1">
       <label
         htmlFor={inputId}
-        className="text-xs font-bold uppercase tracking-wider text-muted"
+        className="text-xs font-bold uppercase tracking-wider text-fg-mute"
       >
         {label}
       </label>
       <input
         id={inputId}
-        className={`w-full rounded-xl border border-plum bg-cosmos/70 px-4 py-3 text-base font-semibold text-cream placeholder-muted/60 focus:border-gold focus:bg-cosmos/90 focus:outline-none focus:ring-2 focus:ring-berry/40 ${className}`}
+        className={`w-full rounded-xl border border-line bg-inset px-4 py-3 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition focus:border-accent-text focus:ring-2 focus:ring-accent/40 focus:outline-none ${className}`}
         {...props}
       />
-      {error && <p className="text-sm text-red-300">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   )
 }

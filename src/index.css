@@ -2,56 +2,82 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Summer Raspberry
-   Chocolate cosmos #46000D · Rosewood #5E0009 · Tyrian #720137
-   Palatinate #590054 · Barossa #42002E
+   Paleta "Nocturne" — negra profunda con acentos profundo
+   Fondo #1A1A1A · Texto #F0F0F0
+   Verde azulado #004D61 · Rubí #822659 · Verde bosque #3E5641
    ============================================================ */
 @theme {
-  /* Base de la paleta */
-  --color-cosmos: #46000d;
-  --color-rosewood: #5e0009;
-  --color-tyrian: #720137;
-  --color-palatinate: #590054;
-  --color-barossa: #42002e;
+  /* Fondo y superficies (derivados de #1A1A1A) */
+  --color-bg: #1a1a1a;
+  --color-chrome: #141414;
+  --color-inset: #171717;
+  --color-surface: #212121;
+  --color-raised: #2a2a2a;
 
-  /* Superficies */
-  --color-night: #46000d;
-  --color-surface: #5e0009;
-  --color-card: #42002e;
-
-  /* Acentos (texto y bordes) */
-  --color-gold: #e79cc0;
-  --color-gold-dark: #b8638f;
-  --color-berry: #720137;
-  --color-plum: #590054;
+  /* Bordes */
+  --color-line: #2e2e2e;
+  --color-line-strong: #3d3d3d;
 
   /* Texto */
-  --color-cream: #fbeef4;
-  --color-muted: #d3a9bd;
+  --color-fg: #f0f0f0;
+  --color-fg-soft: #b8b8b8;
+  --color-fg-mute: #8a8a8a;
+
+  /* Acento 1 — verde azulado #004D61 */
+  --color-accent: #004d61;
+  --color-accent-hover: #005e75;
+  --color-accent-soft: #0a3d4d;
+  --color-accent-text: #5cb8d4;
+
+  /* Acento 2 — rubí #822659 */
+  --color-ruby: #822659;
+  --color-ruby-hover: #9b2f6e;
+  --color-ruby-soft: #5e1c3f;
+  --color-ruby-text: #e98cbe;
+
+  /* Botón / CTA — verde bosque #3E5641 */
+  --color-cta: #3e5641;
+  --color-cta-hover: #4a684e;
+  --color-cta-dark: #33482f;
+  --color-cta-text: #9bc4a3;
+
+  /* Estados */
+  --color-success: #9bc4a3;
+  --color-danger: #f0657f;
+  --color-info: #5cb8d4;
 
   --font-serif: "Playfair Display", Georgia, serif;
 }
 
+/* Bordes neutros por defecto (Tailwind v4 usa currentColor) */
+*,
+::before,
+::after {
+  border-color: var(--color-line);
+}
+
 html {
-  background-color: #46000d;
+  background-color: #1a1a1a;
 }
 
 body {
   margin: 0;
-  background-color: #46000d;
-  background-image: linear-gradient(180deg, #46000d 0%, #42002e 55%, #590054 100%);
+  background-color: #1a1a1a;
+  background-image:
+    radial-gradient(120% 55% at 50% 0%, rgba(0, 77, 97, 0.32) 0%, rgba(0, 77, 97, 0) 62%),
+    radial-gradient(90% 45% at 100% 100%, rgba(130, 38, 89, 0.2) 0%, rgba(130, 38, 89, 0) 58%);
   background-attachment: fixed;
-  color: #fbeef4;
+  color: #f0f0f0;
   font-family: "Playfair Display", Georgia, serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
 
-/* Títulos dentro de las páginas: más marcados y con brillo */
+/* Títulos dentro de las páginas: más marcados y con profundidad */
 h1,
 h2 {
   letter-spacing: -0.01em;
-  text-shadow: 0 2px 12px rgba(114, 1, 55, 0.55);
+  text-shadow: 0 2px 16px rgba(130, 38, 89, 0.32);
 }
 
 /* Números y montos: tabulares para que se lean alineados */
@@ -61,8 +87,12 @@ h2 {
 }
 
 ::selection {
-  background: #720137;
-  color: #fbeef4;
+  background: #822659;
+  color: #f0f0f0;
+}
+
+::placeholder {
+  color: rgba(138, 138, 138, 0.65);
 }
 
 /* Scroll discreto acorde al tema */
@@ -71,9 +101,12 @@ h2 {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #46000d;
+  background: #1a1a1a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #590054;
+  background: #3a3a3a;
   border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
 }

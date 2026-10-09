@@ -24,9 +24,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const colors = {
-    success: 'bg-barossa text-cream border-green-600/60',
-    error: 'bg-barossa text-red-200 border-red-700/70',
-    info: 'bg-rosewood text-cream border-plum',
+    success: 'bg-surface text-success border-cta-text/50',
+    error: 'bg-surface text-danger border-danger/50',
+    info: 'bg-surface text-info border-accent-text/50',
   }
 
   return (
@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`w-full max-w-sm rounded-2xl border px-4 py-3 text-center font-semibold shadow-xl shadow-cosmos/80 ${colors[t.type]}`}
+            className={`w-full max-w-sm rounded-2xl border px-4 py-3 text-center font-semibold shadow-xl shadow-black/80 ${colors[t.type]}`}
           >
             {t.message}
           </div>

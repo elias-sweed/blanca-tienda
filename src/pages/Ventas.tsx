@@ -109,16 +109,16 @@ export default function Ventas() {
 
       {categories.map(({ category, items }) => (
         <div key={category} className="mb-6">
-          <h2 className="mb-2 text-lg font-bold text-gold">{category}</h2>
+          <h2 className="mb-2 text-lg font-bold text-fg">{category}</h2>
           <div className="grid grid-cols-2 gap-3">
             {items.map(({ product, variant }) => (
               <Card key={variant.id} className="flex flex-col">
                 <p className="font-bold">{product.name}</p>
-                <p className="text-sm text-muted/80">
+                <p className="text-sm text-fg-mute">
                   {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
                 </p>
-                <p className="mt-1 text-lg font-bold text-gold">S/ {product.price.toFixed(2)}</p>
-                <p className="text-xs text-muted/80">{variant.quantity} disponibles</p>
+                <p className="mt-1 text-lg font-bold text-ruby-text">S/ {product.price.toFixed(2)}</p>
+                <p className="text-xs text-fg-mute">{variant.quantity} disponibles</p>
                 <Button
                   size="md"
                   className="mt-2 w-full"
@@ -134,19 +134,19 @@ export default function Ventas() {
 
       {outOfStock.length > 0 && (
         <div className="mb-6">
-          <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-red-400">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-sm">!</span>
+          <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-danger">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-danger text-sm font-bold text-bg">!</span>
             Agotado
           </h2>
           <div className="grid grid-cols-2 gap-3">
             {outOfStock.map(({ product, variant }) => (
               <Card key={variant.id} className="flex flex-col opacity-60">
                 <p className="font-bold">{product.name}</p>
-                <p className="text-sm text-muted/80">
+                <p className="text-sm text-fg-mute">
                   {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
                 </p>
-                <p className="mt-1 text-lg font-bold text-muted/80">S/ {product.price.toFixed(2)}</p>
-                <p className="text-xs text-red-400">No disponible</p>
+                <p className="mt-1 text-lg font-bold text-fg-mute">S/ {product.price.toFixed(2)}</p>
+                <p className="text-xs text-danger">No disponible</p>
                 <Button
                   size="md"
                   className="mt-2 w-full"
@@ -163,11 +163,12 @@ export default function Ventas() {
       {/* Floating Cart Button */}
       <button
         onClick={() => setOpenCart(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-2xl shadow-lg shadow-black/40 transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-2xl shadow-lg shadow-black/70 ring-1 ring-accent-text/50 transition active:scale-95"
+        aria-label="Abrir carrito"
       >
         🛒
         {cartCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-danger text-xs font-bold text-bg">
             {cartCount}
           </span>
         )}
@@ -304,30 +305,30 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
               <div
                 key={d.key}
                 className={`flex items-center justify-between gap-2 rounded-xl border p-2.5 ${
-                  editingKey === d.key ? 'border-gold bg-gold/10' : 'border-gold/20 bg-surface'
+                  editingKey === d.key ? 'border-ruby-text bg-ruby/20' : 'border-line bg-inset'
                 }`}
               >
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold">{d.name}</p>
-                  <p className="truncate text-xs text-muted/80">
+                  <p className="truncate text-xs text-fg-mute">
                     S/ {Number(d.price).toFixed(2)} × {d.quantity}
                     {[d.size && ` · Talla ${d.size}`, d.color && ` · ${d.color}`].filter(Boolean).join('')}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <span className="mr-1 whitespace-nowrap text-sm font-bold text-gold">
+                  <span className="mr-1 whitespace-nowrap text-sm font-bold text-ruby-text">
                     S/ {((Number(d.price) || 0) * (Number(d.quantity) || 0)).toFixed(2)}
                   </span>
                   <button
                     onClick={() => startEdit(d)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gold/30 text-gold active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong text-accent-text transition hover:bg-accent/20 active:scale-95"
                     aria-label="Editar producto"
                   >
                     ✎
                   </button>
                   <button
                     onClick={() => removeDraft(d.key)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/30 text-red-400 active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/40 text-danger transition hover:bg-danger/15 active:scale-95"
                     aria-label="Eliminar producto"
                   >
                     ×
@@ -344,15 +345,15 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
           </Button>
         )}
 
-        <div className="flex flex-col rounded-xl border border-gold/20 bg-night/40">
+        <div className="flex flex-col rounded-xl border border-line bg-inset">
           <button
             onClick={() => setFormOpen(!formOpen)}
             className="flex items-center justify-between p-3 text-left"
           >
-            <span className="font-bold text-gold">
+            <span className="font-bold text-fg">
               {editingKey ? 'Editar producto' : '+ Producto nuevo'}
             </span>
-            <span className="text-lg leading-none text-gold">{formOpen ? '▾' : '▸'}</span>
+            <span className="text-lg leading-none text-accent-text">{formOpen ? '▾' : '▸'}</span>
           </button>
 
           {formOpen && (
@@ -379,22 +380,26 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
           )}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-gold/20 pt-3">
-          <div className="rounded-xl border border-gold/20 bg-night p-3">
+        <div className="flex flex-col gap-3 border-t border-line pt-3">
+          <div className="rounded-xl border border-line bg-inset p-3">
             <div className="flex justify-between text-lg font-bold">
-              <span className="text-gold">Total</span>
-              <span className="text-gold">S/ {total.toFixed(2)}</span>
+              <span className="text-fg-soft">Total</span>
+              <span className="text-ruby-text">S/ {total.toFixed(2)}</span>
             </div>
           </div>
 
           <div>
-            <p className="mb-1 text-sm font-semibold text-gold">Método de pago</p>
+            <p className="mb-1 text-sm font-semibold text-fg-soft">Método de pago</p>
             <div className="grid grid-cols-3 gap-2">
               {PAYMENTS.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setMethod(p.id)}
-                  className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-berry bg-berry text-cream' : 'border-plum bg-cosmos/70 text-muted'}`}
+                  className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${
+                    method === p.id
+                      ? 'border-accent-text bg-accent text-fg'
+                      : 'border-line bg-inset text-fg-mute hover:border-line-strong hover:text-fg-soft'
+                  }`}
                 >
                   {p.label}
                 </button>
@@ -405,18 +410,18 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
           <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
 
           {insufficientPayment && (
-            <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-3">
-              <p className="text-center text-sm font-bold text-red-400">
+            <div className="rounded-xl border border-danger/40 bg-danger/10 p-3">
+              <p className="text-center text-sm font-bold text-danger">
                 El monto es menor al total. Faltan S/ {(total - paid).toFixed(2)}
               </p>
             </div>
           )}
 
           {change !== null && change >= 0 && !insufficientPayment && (
-            <div className="rounded-xl border border-green-500/30 bg-green-950/30 p-3">
+            <div className="rounded-xl border border-cta-text/40 bg-cta/15 p-3">
               <div className="flex justify-between text-sm">
-                <span className="text-muted">Vuelto</span>
-                <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
+                <span className="text-fg-soft">Vuelto</span>
+                <span className="font-bold text-cta-text">S/ {change.toFixed(2)}</span>
               </div>
             </div>
           )}
@@ -473,19 +478,19 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-bold">{item.name}</p>
-                <p className="text-sm text-muted/80">
+                <p className="text-sm text-fg-mute">
                   {[item.size && `Talla: ${item.size}`, item.color && `Color: ${item.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
                 </p>
-                <p className="text-sm text-muted/80">S/ {item.price.toFixed(2)} c/u</p>
-                <p className="mt-1 inline-block rounded-full bg-gold/20 px-2 py-0.5 text-xs font-bold text-gold">
+                <p className="text-sm text-fg-mute">S/ {item.price.toFixed(2)} c/u</p>
+                <p className="mt-1 inline-block rounded-full bg-accent/20 px-2 py-0.5 text-xs font-bold text-accent-text">
                   {item.available} unidades
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => onUpdateQty(item.variantId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-gold border border-gold/30 font-bold">-</button>
+                <button onClick={() => onUpdateQty(item.variantId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-raised font-bold text-accent-text transition hover:bg-accent/20">-</button>
                 <span className="w-8 text-center font-bold">{item.quantity}</span>
-                <button onClick={() => onUpdateQty(item.variantId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-gold border border-gold/30 font-bold">+</button>
-                <button onClick={() => onRemove(item.variantId)} className="ml-2 text-red-400 text-sm">Eliminar</button>
+                <button onClick={() => onUpdateQty(item.variantId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-raised font-bold text-accent-text transition hover:bg-accent/20">+</button>
+                <button onClick={() => onRemove(item.variantId)} className="ml-2 text-sm text-danger hover:underline">Eliminar</button>
               </div>
             </div>
           </Card>
@@ -493,21 +498,25 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
 
         {cart.length > 0 && (
           <>
-            <div className="rounded-xl border border-gold/20 bg-night p-3">
+            <div className="rounded-xl border border-line bg-inset p-3">
               <div className="flex justify-between text-lg font-bold">
-                <span className="text-gold">Total</span>
-                <span className="text-gold">S/ {total.toFixed(2)}</span>
+                <span className="text-fg-soft">Total</span>
+                <span className="text-ruby-text">S/ {total.toFixed(2)}</span>
               </div>
             </div>
 
             <div>
-              <p className="mb-1 text-sm font-semibold text-gold">Método de pago</p>
+              <p className="mb-1 text-sm font-semibold text-fg-soft">Método de pago</p>
               <div className="grid grid-cols-3 gap-2">
                 {PAYMENTS.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => setMethod(p.id)}
-                    className={`rounded-xl border px-2 py-3 text-sm font-bold ${method === p.id ? 'border-berry bg-berry text-cream' : 'border-plum bg-cosmos/70 text-muted'}`}
+                    className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${
+                      method === p.id
+                        ? 'border-accent-text bg-accent text-fg'
+                        : 'border-line bg-inset text-fg-mute hover:border-line-strong hover:text-fg-soft'
+                    }`}
                   >
                     {p.label}
                   </button>
@@ -518,18 +527,18 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
             <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
 
             {insufficientPayment && (
-              <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-3">
-                <p className="text-center text-sm font-bold text-red-400">
+              <div className="rounded-xl border border-danger/40 bg-danger/10 p-3">
+                <p className="text-center text-sm font-bold text-danger">
                   El monto es menor al total. Faltan S/ {(total - paid).toFixed(2)}
                 </p>
               </div>
             )}
 
             {change !== null && change >= 0 && !insufficientPayment && (
-              <div className="rounded-xl border border-green-500/30 bg-green-950/30 p-3">
+              <div className="rounded-xl border border-cta-text/40 bg-cta/15 p-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted">Vuelto</span>
-                  <span className="font-bold text-green-400">S/ {change.toFixed(2)}</span>
+                  <span className="text-fg-soft">Vuelto</span>
+                  <span className="font-bold text-cta-text">S/ {change.toFixed(2)}</span>
                 </div>
               </div>
             )}
