@@ -14,13 +14,13 @@ export default function Inicio() {
 
   const cash = useLiveQuery(async () => {
     if (!openRegister) return undefined
-    const sales = await db.sales.where('registerId').equals(openRegister.id).toArray()
+    const sales = (await db.sales.where('registerId').equals(openRegister.id).toArray()).filter((s) => !s.anulada)
     const efectivo = round2(sales.filter((s) => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0))
     return { sales: sales.length, efectivo, expected: round2(openRegister.openingAmount + efectivo) }
   }, [openRegister?.id])
 
   const stats = useLiveQuery(async () => {
-    const sales = await db.sales.where('date').equals(todayISO()).toArray()
+    const sales = (await db.sales.where('date').equals(todayISO()).toArray()).filter((s) => !s.anulada)
     const items = await db.saleItems.toArray()
     const todaySaleIds = new Set(sales.map((s) => s.id))
     const soldToday = items.filter((i) => todaySaleIds.has(i.saleId)).reduce((s, i) => s + i.quantity, 0)

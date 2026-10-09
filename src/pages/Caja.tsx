@@ -29,10 +29,15 @@ export default function Caja() {
   const [counted, setCounted] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const register = useLiveQuery(async () => {
+  // El resultado se envuelve en un objeto: `useLiveQuery` devuelve `undefined`
+  // tanto mientras carga como cuando la consulta resuelve `undefined`, y sin
+  // este envoltorio la página no puede diferenciar "cargando" de "no hay caja".
+  const openRegister = useLiveQuery(async () => {
     const regs = await db.cashRegisters.where('status').equals('abierta').toArray()
-    return regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0]
+    return { register: regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0] ?? null }
   }, [])
+
+  const register = openRegister?.register
 
   const sales = useLiveQuery(
     async () => (register ? db.sales.where('registerId').equals(register.id).toArray() : []),
@@ -41,7 +46,9 @@ export default function Caja() {
 
   const closures = useLiveQuery(() => db.cashClosures.reverse().sortBy('createdAt'), [])
 
-  const ordered = [...(sales ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const allSales = [...(sales ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  // Las ventas anuladas se muestran tachadas pero no suman al efectivo esperado.
+  const ordered = allSales.filter((s) => !s.anulada)
   const porMetodo = METODOS.reduce<Record<string, number>>((acc, m) => {
     acc[m.id] = round2(ordered.filter((s) => s.paymentMethod === m.id).reduce((sum, s) => sum + s.total, 0))
     return acc
@@ -93,7 +100,7 @@ export default function Caja() {
 
   return (
     <AppLayout title="Caja">
-      {register === undefined ? (
+      {openRegister === undefined ? (
         <Spinner label="Cargando caja..." />
       ) : !register ? (
         <>
@@ -158,12 +165,17 @@ export default function Caja() {
               <EmptyState title="Sin ventas" description="Las ventas de esta caja aparecerán aquí." />
             ) : (
               <div className="flex flex-col gap-3">
-                {ordered.map((s) => (
-                  <Card key={s.id}>
+                {allSales.map((s) => (
+                  <Card key={s.id} className={s.anulada ? 'opacity-60' : ''}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-bold text-ruby-text">S/ {s.total.toFixed(2)}</p>
-                        <p className="text-sm text-fg-mute">{s.paymentMethod}</p>
+                        <p className={`font-bold ${s.anulada ? 'text-fg-mute line-through' : 'text-ruby-text'}`}>
+                          S/ {s.total.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-fg-mute">
+                          {METODOS.find((m) => m.id === s.paymentMethod)?.label ?? s.paymentMethod}
+                          {s.anulada ? ' · Anulada' : ''}
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-fg-soft">{s.date}</p>

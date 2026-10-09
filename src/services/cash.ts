@@ -122,14 +122,19 @@ export async function getRegisterSummary(registerId: string): Promise<RegisterSu
     tarjeta: 0,
     otro: 0,
   }
-  for (const s of sales) porMetodo[s.paymentMethod] = round2(porMetodo[s.paymentMethod] + s.total)
+  for (const s of sales) {
+    if (s.anulada) continue
+    porMetodo[s.paymentMethod] = round2(porMetodo[s.paymentMethod] + s.total)
+  }
 
-  const totalVendido = round2(sales.reduce((sum, s) => sum + s.total, 0))
+  const totalVendido = round2(sales.filter((s) => !s.anulada).reduce((sum, s) => sum + s.total, 0))
+
+  const activas = sales.filter((s) => !s.anulada)
 
   return {
     register,
     sales,
-    salesCount: sales.length,
+    salesCount: activas.length,
     porMetodo,
     totalVendido,
     expectedCash: round2(register.openingAmount + porMetodo.efectivo),

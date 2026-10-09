@@ -39,4 +39,10 @@ db.version(2).stores({
   sales: 'id, date, paymentMethod, syncStatus, registerId',
 })
 
+// v3: campo `anulada` en sales, usado por Historial para anular una venta.
+// Los índices no cambian; Dexie solo actualiza el esquema interno.
+db.version(3).stores({
+  sales: 'id, date, paymentMethod, syncStatus, registerId, anulada',
+})
+
 export { db }

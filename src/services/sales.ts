@@ -153,6 +153,64 @@ export async function registerSale(data: {
 }
 
 /**
+ * Anula una venta y devuelve el stock de cada línea.
+ * La venta no se borra: queda marcada `anulada` para conservar el histórico.
+ * Venta, detalles, reposición de stock y movimientos, todo en una transacción.
+ */
+export async function voidSale(saleId: string, motivo?: string): Promise<Sale> {
+  return db.transaction(
+    'rw',
+    db.sales,
+    db.saleItems,
+    db.productVariants,
+    db.inventoryMovements,
+    async () => {
+      const sale = await db.sales.get(saleId)
+      if (!sale) throw new Error('La venta no existe')
+      if (sale.anulada) throw new Error('La venta ya está anulada')
+
+      const items = await db.saleItems.where('saleId').equals(saleId).toArray()
+      if (items.length === 0) throw new Error('La venta no tiene detalles')
+
+      const now = nowISO()
+
+      for (const item of items) {
+        const variant = await db.productVariants.get(item.variantId)
+        if (!variant) throw new Error('Producto no encontrado')
+        await db.productVariants.update(item.variantId, {
+          quantity: variant.quantity + item.quantity,
+          updatedAt: now,
+          syncStatus: 'pending',
+        })
+        await db.inventoryMovements.add({
+          id: newId(),
+          variantId: item.variantId,
+          productName: item.productName,
+          reason: 'anulacion',
+          quantity: item.quantity,
+          note: motivo?.trim() || undefined,
+          createdAt: now,
+          updatedAt: now,
+          syncStatus: 'pending',
+        })
+      }
+
+      await db.sales.update(saleId, {
+        anulada: true,
+        anuladaAt: now,
+        anuladaMotivo: motivo?.trim() || undefined,
+        updatedAt: now,
+        syncStatus: 'pending',
+      })
+
+      const updated = await db.sales.get(saleId)
+      if (!updated) throw new Error('No se pudo anular la venta')
+      return updated
+    },
+  )
+}
+
+/**
  * Valida y normaliza todas las líneas antes de escribir nada.
  * Fusiona variantes repetidas para no descontar dos veces el mismo stock.
  */

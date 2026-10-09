@@ -34,6 +34,10 @@ export interface Sale extends BaseEntity {
   registerId?: string
   amountPaid?: number
   change?: number
+  /** Venta anulada: se conserva para el histórico pero no cuenta en caja. */
+  anulada?: boolean
+  anuladaAt?: string
+  anuladaMotivo?: string
 }
 
 export interface SaleItem extends BaseEntity {
@@ -45,7 +49,7 @@ export interface SaleItem extends BaseEntity {
   subtotal: number
 }
 
-export type MovementReason = 'entrada' | 'venta' | 'ajuste' | 'devolucion' | 'salida'
+export type MovementReason = 'entrada' | 'venta' | 'ajuste' | 'devolucion' | 'anulacion' | 'salida'
 
 export interface InventoryMovement extends BaseEntity {
   variantId: string
