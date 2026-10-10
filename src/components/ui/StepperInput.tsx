@@ -109,7 +109,7 @@ export function StepperInput({
           type="button"
           onClick={() => mover(-step)}
           aria-label={`Restar ${step}`}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-raised text-2xl font-bold text-cta-text transition active:scale-95"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-accent-text/40 bg-gradient-to-b from-cta-hover to-cta text-2xl font-bold text-white shadow-[0_0_16px_rgba(139,31,45,0.4)] transition active:scale-95"
         >
           −
         </button>
@@ -140,7 +140,7 @@ export function StepperInput({
               type="button"
               onClick={limpiar}
               aria-label="Borrar"
-              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-raised text-base leading-none text-fg-mute transition active:scale-90"
+              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-accent-text/40 bg-gradient-to-b from-cta-hover to-cta text-base font-bold leading-none text-white shadow-[0_0_12px_rgba(139,31,45,0.4)] transition active:scale-90"
             >
               ×
             </button>
@@ -151,7 +151,7 @@ export function StepperInput({
           type="button"
           onClick={() => mover(step)}
           aria-label={`Sumar ${step}`}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line bg-raised text-2xl font-bold text-cta-text transition active:scale-95"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-accent-text/40 bg-gradient-to-b from-cta-hover to-cta text-2xl font-bold text-white shadow-[0_0_16px_rgba(139,31,45,0.4)] transition active:scale-95"
         >
           +
         </button>
