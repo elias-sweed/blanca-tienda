@@ -24,15 +24,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const colors = {
-    success: 'bg-surface text-success border-cta-text/50',
+    success: 'bg-surface text-cta-text border-cta-text/50',
     error: 'bg-surface text-danger border-danger/50',
-    info: 'bg-surface text-info border-accent-text/50',
+    info: 'bg-surface text-info border-cta/50',
   }
 
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 top-4 z-[70] flex flex-col items-center gap-2 px-4">
+      {/* En móvil el header ocupa ~64px: los avisos van justo debajo para no taparlo. */}
+      <div className="pointer-events-none fixed inset-x-0 top-[4.5rem] z-[70] flex flex-col items-center gap-2 px-4">
         {toasts.map((t) => (
           <div
             key={t.id}

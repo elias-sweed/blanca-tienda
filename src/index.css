@@ -2,49 +2,49 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Paleta "Nocturne" — negra profunda con acentos profundo
-   Fondo #1A1A1A · Texto #F0F0F0
-   Verde azulado #004D61 · Rubí #822659 · Verde bosque #3E5641
+   Paleta "Imperial" — negro profundo con acentos dorados
+   Fondo #14110D · Texto #F5F1E8
+   Oro viejo #B8860B · Oro claro #E8C766 · Rojo profundo #8B1A1A
    ============================================================ */
 @theme {
-  /* Fondo y superficies (derivados de #1A1A1A) */
-  --color-bg: #1a1a1a;
-  --color-chrome: #141414;
-  --color-inset: #171717;
-  --color-surface: #212121;
-  --color-raised: #2a2a2a;
+  /* Fondo y superficies (negros con calidez) */
+  --color-bg: #14110d;
+  --color-chrome: #0f0d0a;
+  --color-inset: #1a1611;
+  --color-surface: #1f1a14;
+  --color-raised: #29221a;
 
   /* Bordes */
-  --color-line: #2e2e2e;
-  --color-line-strong: #3d3d3d;
+  --color-line: #322a20;
+  --color-line-strong: #473c2d;
 
   /* Texto */
-  --color-fg: #f0f0f0;
-  --color-fg-soft: #b8b8b8;
-  --color-fg-mute: #8a8a8a;
+  --color-fg: #f5f1e8;
+  --color-fg-soft: #c4b9a4;
+  --color-fg-mute: #948873;
 
-  /* Acento 1 — verde azulado #004D61 */
-  --color-accent: #004d61;
-  --color-accent-hover: #005e75;
-  --color-accent-soft: #0a3d4d;
-  --color-accent-text: #5cb8d4;
+  /* Acento 1 — Oro profundo #B8860B */
+  --color-accent: #6b5310;
+  --color-accent-hover: #7d6215;
+  --color-accent-soft: #4a390b;
+  --color-accent-text: #e8c766;
 
-  /* Acento 2 — rubí #822659 */
-  --color-ruby: #822659;
-  --color-ruby-hover: #9b2f6e;
-  --color-ruby-soft: #5e1c3f;
-  --color-ruby-text: #e98cbe;
+  /* Acento 2 — Rojo profundo #8B1A1A */
+  --color-ruby: #6e1414;
+  --color-ruby-hover: #851919;
+  --color-ruby-soft: #4d0e0e;
+  --color-ruby-text: #f0a09a;
 
-  /* Botón / CTA — verde bosque #3E5641 */
-  --color-cta: #3e5641;
-  --color-cta-hover: #4a684e;
-  --color-cta-dark: #33482f;
-  --color-cta-text: #9bc4a3;
+  /* Botón / CTA — Oro #C9A227 */
+  --color-cta: #b8860b;
+  --color-cta-hover: #d19a1c;
+  --color-cta-dark: #8f6a08;
+  --color-cta-text: #f2d98f;
 
   /* Estados */
-  --color-success: #9bc4a3;
-  --color-danger: #f0657f;
-  --color-info: #5cb8d4;
+  --color-success: #d4b04a;
+  --color-danger: #e05555;
+  --color-info: #d9b45e;
 
   --font-serif: "Playfair Display", Georgia, serif;
 }
@@ -57,17 +57,17 @@
 }
 
 html {
-  background-color: #1a1a1a;
+  background-color: #14110d;
 }
 
 body {
   margin: 0;
-  background-color: #1a1a1a;
+  background-color: #14110d;
   background-image:
-    radial-gradient(120% 55% at 50% 0%, rgba(0, 77, 97, 0.32) 0%, rgba(0, 77, 97, 0) 62%),
-    radial-gradient(90% 45% at 100% 100%, rgba(130, 38, 89, 0.2) 0%, rgba(130, 38, 89, 0) 58%);
+    radial-gradient(120% 55% at 50% 0%, rgba(184, 134, 11, 0.22) 0%, rgba(184, 134, 11, 0) 62%),
+    radial-gradient(90% 45% at 100% 100%, rgba(139, 26, 26, 0.18) 0%, rgba(139, 26, 26, 0) 58%);
   background-attachment: fixed;
-  color: #f0f0f0;
+  color: #f5f1e8;
   font-family: "Playfair Display", Georgia, serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
@@ -77,7 +77,7 @@ body {
 h1,
 h2 {
   letter-spacing: -0.01em;
-  text-shadow: 0 2px 16px rgba(130, 38, 89, 0.32);
+  text-shadow: 0 2px 16px rgba(184, 134, 11, 0.28);
 }
 
 /* Números y montos: tabulares para que se lean alineados */
@@ -87,8 +87,8 @@ h2 {
 }
 
 ::selection {
-  background: #822659;
-  color: #f0f0f0;
+  background: #b8860b;
+  color: #f5f1e8;
 }
 
 ::placeholder {
@@ -101,12 +101,12 @@ h2 {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: #14110d;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
+  background: #473c2d;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
+  background: #6b5a3e;
 }

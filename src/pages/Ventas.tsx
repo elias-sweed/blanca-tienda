@@ -45,16 +45,31 @@ export default function Ventas() {
     return { register: regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0] ?? null }
   }, [])
 
+  // `undefined` mientras la consulta carga; solo cuando resuelve sabemos
+  // con certeza si hay caja abierta.
+  const cashResolved = openRegister !== undefined
   const cashOpen = openRegister?.register != null
 
-  // Al entrar a Ventas: si no hay caja abierta, mostrar el modal de aviso con sonido
+  // Evita repetir el aviso y el sonido dentro de la misma visita.
+  const yaAvisoRef = useRef(false)
+
+  // Al entrar a Ventas: si ya se sabe que no hay caja abierta, mostrar el
+  // modal de aviso con sonido. Mientras carga no se avisa para que al volver
+  // de Caja no suene la alarma antes de tiempo.
   useEffect(() => {
+    if (!cashResolved) return
+
     if (cashOpen) {
       setShowOpenCashReminder(false)
+      yaAvisoRef.current = true
       return
     }
-    const skip = localStorage.getItem('ventas-saltar-aviso-caja')
-    if (skip === '1') return
+
+    if (yaAvisoRef.current) return
+    yaAvisoRef.current = true
+
+    if (localStorage.getItem('ventas-saltar-aviso-caja') === '1') return
+
     setShowOpenCashReminder(true)
     // Reproducir sonido de advertencia
     try {
@@ -64,7 +79,7 @@ export default function Ventas() {
       audioRef.current.currentTime = 0
       audioRef.current.play().catch(() => {})
     } catch {}
-  }, [cashOpen])
+  }, [cashResolved, cashOpen])
 
   const products = useLiveQuery(async () => {
     const all = await db.products.filter((p) => p.active && !p.deleted).toArray()
@@ -130,7 +145,7 @@ export default function Ventas() {
   return (
     <AppLayout title="Ventas">
       {/* Modal de aviso de caja cerrada al entrar a Ventas */}
-      {showOpenCashReminder && !cashOpen && (
+      {showOpenCashReminder && cashResolved && !cashOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-sm rounded-3xl border border-line-strong bg-raised p-6 shadow-2xl shadow-black/80">
             <div className="flex flex-col items-center gap-4 text-center">
@@ -206,7 +221,7 @@ export default function Ventas() {
       {outOfStock.length > 0 && (
         <div className="mb-6">
           <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-danger">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-danger text-sm font-bold text-bg">!</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-danger text-sm font-bold text-fg">!</span>
             Agotado
           </h2>
           <div className="grid grid-cols-2 gap-3">
@@ -234,12 +249,12 @@ export default function Ventas() {
       {/* Floating Cart Button */}
       <button
         onClick={() => setOpenCart(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-2xl shadow-lg shadow-black/70 ring-1 ring-accent-text/50 transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-lg shadow-cta/25 shadow-black/70 ring-1 ring-cta-text/50 transition active:scale-95"
         aria-label="Abrir carrito"
       >
         🛒
         {cartCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-danger text-xs font-bold text-bg">
+          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-danger text-xs font-bold text-fg">
             {cartCount}
           </span>
         )}
