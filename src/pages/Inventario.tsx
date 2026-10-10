@@ -6,6 +6,7 @@ import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
+import { StepperInput } from '../components/ui/StepperInput'
 import { useToast } from '../components/ui/Toast'
 import { db } from '../lib/db'
 import { addStock, addVariant, adjustStock, createProduct, type ProductVariantInput } from '../services/inventory'
@@ -177,12 +178,11 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [category, setCategory] = useState('')
-  const [stockMin, setStockMin] = useState('0')
   const [drafts, setDrafts] = useState<VariantDraft[]>([newDraft()])
   const [busy, setBusy] = useState(false)
 
   function reset() {
-    setName(''); setPrice(''); setCategory(''); setStockMin('0'); setDrafts([newDraft()])
+    setName(''); setPrice(''); setCategory(''); setDrafts([newDraft()])
   }
 
   function updateDraft(key: string, patch: Partial<VariantDraft>) {
@@ -202,7 +202,7 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
 
     setBusy(true)
     try {
-      await createProduct({ name, price: p, category, stockMin: Number(stockMin) || 0, variants })
+      await createProduct({ name, price: p, category, variants })
       onCreated()
       onClose()
       reset()
@@ -217,11 +217,19 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
     <Modal open={open} title="Agregar producto" onClose={onClose}>
       <div className="flex flex-col gap-3">
         <Input label="Nombre del producto" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Polo básico" />
-        <Input label="Precio de venta (S/)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Categoría (opcional)" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Polos" />
-          <Input label="Stock mínimo" type="number" value={stockMin} onChange={(e) => setStockMin(e.target.value)} />
-        </div>
+
+        <StepperInput
+          label="Precio de Venta"
+          value={price}
+          onChange={setPrice}
+          onInvalid={() => show('Aquí solo van números, no se aceptan letras', 'error')}
+          prefix="S/"
+          step={1}
+          decimal
+          placeholder="0.00"
+        />
+
+        <Input label="Categoría (opcional)" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Polos" />
 
         <div className="flex flex-col rounded-xl border border-line bg-inset">
           <div className="flex items-center justify-between border-b border-line p-3">
@@ -242,7 +250,16 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
                   <Input label="Talla" value={d.size} onChange={(e) => updateDraft(d.key, { size: e.target.value })} placeholder="M" />
                   <Input label="Color" value={d.color} onChange={(e) => updateDraft(d.key, { color: e.target.value })} placeholder="Negro" />
                 </div>
-                <Input label="Cantidad inicial" type="number" value={d.quantity} onChange={(e) => updateDraft(d.key, { quantity: e.target.value })} />
+                <StepperInput
+                  label="Cantidad inicial"
+                  value={d.quantity}
+                  onChange={(v) => updateDraft(d.key, { quantity: v })}
+                  onInvalid={() => show('Aquí solo van números, no se aceptan letras', 'error')}
+                  step={1}
+                  min={0}
+                  allowEmpty
+                  placeholder="Ej: 5"
+                />
                 {drafts.length > 1 && (
                   <button
                     onClick={() => setDrafts((ds) => ds.filter((x) => x.key !== d.key))}
