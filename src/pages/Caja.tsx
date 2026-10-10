@@ -118,7 +118,7 @@ export default function Caja() {
 
           {closures && closures.length > 0 && (
             <div className="mt-6">
-              <h2 className="mb-2 text-lg font-bold text-fg">Cierres anteriores</h2>
+              <h2 className="mb-2 text-lg font-bold text-gold">Cierres anteriores</h2>
               <div className="flex flex-col gap-3">
                 {closures.map((c) => (
                   <Card key={c.id}>
@@ -131,8 +131,8 @@ export default function Caja() {
         </>
       ) : (
         <>
-          <div className="mb-4 rounded-2xl border border-cta-text/40 bg-cta/15 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-cta-text">Caja abierta</p>
+          <div className="mb-4 rounded-2xl border border-success/40 bg-success/10 p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-success">Caja abierta</p>
             <p className="mt-1 text-sm text-fg-mute">
               Desde {new Date(register.openedAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
             </p>
@@ -156,7 +156,7 @@ export default function Caja() {
           </div>
 
           <div className="mt-4">
-            <h2 className="mb-2 text-lg font-bold text-fg">Por método de pago</h2>
+            <h2 className="mb-2 text-lg font-bold text-gold">Por método de pago</h2>
             <div className="flex flex-col gap-2">
               {METODOS.map((m) => (
                 <div key={m.id} className="flex items-center justify-between rounded-xl border border-line bg-inset px-4 py-3">
@@ -168,7 +168,7 @@ export default function Caja() {
           </div>
 
           <div className="mt-4">
-            <h2 className="mb-2 text-lg font-bold text-fg">Ventas de esta caja</h2>
+            <h2 className="mb-2 text-lg font-bold text-gold">Ventas de esta caja</h2>
             {ordered.length === 0 ? (
               <EmptyState title="Sin ventas" description="Las ventas de esta caja aparecerán aquí." />
             ) : (
@@ -285,7 +285,7 @@ export default function Caja() {
 function ClosureRow({ closure }: { closure: CashClosure }) {
   const estado =
     closure.difference === 0
-      ? { texto: 'Exacto', clase: 'text-cta-text' }
+      ? { texto: 'Exacto', clase: 'text-success' }
       : closure.difference > 0
         ? { texto: `+S/ ${closure.difference.toFixed(2)}`, clase: 'text-info' }
         : { texto: `-S/ ${Math.abs(closure.difference).toFixed(2)}`, clase: 'text-danger' }

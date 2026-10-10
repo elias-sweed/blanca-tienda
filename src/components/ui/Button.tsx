@@ -10,11 +10,11 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-gradient-to-b from-cta-hover to-cta text-[#1a1508] border border-cta-text/45 shadow-lg shadow-cta/20 shadow-black/60 hover:from-cta hover:to-cta-hover active:from-cta-dark active:to-cta-dark active:scale-[0.98]',
+    'bg-gradient-to-b from-cta-hover to-cta text-white border border-accent-text/40 shadow-[0_0_20px_rgba(139,31,45,0.45)] shadow-lg shadow-black/70 hover:brightness-110 active:from-cta-dark active:to-cta-dark active:scale-[0.98]',
   secondary:
     'bg-raised text-cta-text border border-cta/50 hover:bg-cta/15 active:bg-cta/25 active:scale-[0.98]',
   danger:
-    'bg-danger text-fg border border-danger hover:bg-danger/85 active:bg-danger/70 active:scale-[0.98]',
+    'bg-danger text-white border border-danger hover:brightness-110 active:scale-[0.98] shadow-[0_0_20px_rgba(255,46,77,0.5)] shadow-lg shadow-black/70',
   ghost: 'bg-transparent text-fg-soft border border-transparent hover:text-fg hover:bg-raised active:bg-ruby/20',
 }
 

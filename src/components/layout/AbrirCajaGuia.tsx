@@ -55,13 +55,13 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
     >
       <div
         data-guia-panel
-        className="w-full max-w-sm rounded-3xl border border-ruby/40 bg-raised p-6 shadow-2xl shadow-black/90"
+        className="w-full max-w-sm rounded-3xl border border-cta/50 bg-raised p-6 shadow-[0_0_40px_rgba(139,31,45,0.35)] shadow-2xl shadow-black/90"
       >
         <div className="flex flex-col items-center gap-4 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ruby/20 text-3xl">💰</span>
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-cta/25 text-3xl">💰</span>
 
           <div>
-            <p className="text-xl font-bold text-fg">Abre tu caja</p>
+            <p className="text-xl font-bold text-gold">Abre tu caja</p>
             <p className="mt-2 text-sm text-fg-mute">
               Empieza en 0. Tus ventas del día se anotan solas, no tienes que escribir nada.
             </p>

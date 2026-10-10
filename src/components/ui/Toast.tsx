@@ -24,9 +24,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const colors = {
-    success: 'bg-surface text-cta-text border-cta-text/50',
-    error: 'bg-surface text-danger border-danger/50',
-    info: 'bg-surface text-info border-cta/50',
+    success: 'bg-surface text-success border-success/50 shadow-[0_0_18px_rgba(69,224,140,0.35)]',
+    error: 'bg-surface text-danger border-danger/60 shadow-[0_0_18px_rgba(255,46,77,0.45)]',
+    info: 'bg-surface text-info border-info/50 shadow-[0_0_18px_rgba(34,211,238,0.35)]',
   }
 
   return (

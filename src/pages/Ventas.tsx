@@ -151,7 +151,7 @@ export default function Ventas() {
             <div className="flex flex-col items-center gap-4 text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-full bg-danger/15 text-3xl">💰</span>
               <div>
-                <p className="text-xl font-bold text-fg">Antes de vender, abre la caja</p>
+                <p className="text-xl font-bold text-gold">Antes de vender, abre la caja</p>
                 <p className="mt-2 text-sm text-fg-mute">
                   La caja guarda las ventas del día. Ábrela para empezar a vender. Tus ventas se anotan solas, no tienes que escribir nada.
                 </p>
@@ -195,7 +195,7 @@ export default function Ventas() {
 
       {categories.map(({ category, items }) => (
         <div key={category} className="mb-6">
-          <h2 className="mb-2 text-lg font-bold text-fg">{category}</h2>
+          <h2 className="mb-2 text-lg font-bold text-gold">{category}</h2>
           <div className="grid grid-cols-2 gap-3">
             {items.map(({ product, variant }) => (
               <Card key={variant.id} className="flex flex-col">
@@ -249,12 +249,12 @@ export default function Ventas() {
       {/* Floating Cart Button */}
       <button
         onClick={() => setOpenCart(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-lg shadow-cta/25 shadow-black/70 ring-1 ring-cta-text/50 transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-[0_0_22px_rgba(139,31,45,0.6)] shadow-lg shadow-black/70 ring-1 ring-accent-text/40 transition active:scale-95"
         aria-label="Abrir carrito"
       >
         🛒
         {cartCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-danger text-xs font-bold text-fg">
+          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-danger text-xs font-bold text-white shadow-[0_0_10px_rgba(255,46,77,0.8)]">
             {cartCount}
           </span>
         )}
@@ -508,10 +508,10 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
           )}
 
           {change !== null && change >= 0 && !insufficientPayment && (
-            <div className="rounded-xl border border-cta-text/40 bg-cta/15 p-3">
+            <div className="rounded-xl border border-success/40 bg-success/10 p-3">
               <div className="flex justify-between text-sm">
                 <span className="text-fg-soft">Vuelto</span>
-                <span className="font-bold text-cta-text">S/ {change.toFixed(2)}</span>
+                <span className="font-bold text-success">S/ {change.toFixed(2)}</span>
               </div>
             </div>
           )}
@@ -631,10 +631,10 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
             )}
 
             {change !== null && change >= 0 && !insufficientPayment && (
-              <div className="rounded-xl border border-cta-text/40 bg-cta/15 p-3">
+              <div className="rounded-xl border border-success/40 bg-success/10 p-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-fg-soft">Vuelto</span>
-                  <span className="font-bold text-cta-text">S/ {change.toFixed(2)}</span>
+                  <span className="font-bold text-success">S/ {change.toFixed(2)}</span>
                 </div>
               </div>
             )}

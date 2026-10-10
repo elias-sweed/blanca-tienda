@@ -2,49 +2,54 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Paleta "Imperial" — negro profundo con acentos dorados
-   Fondo #14110D · Texto #F5F1E8
-   Oro viejo #B8860B · Oro claro #E8C766 · Rojo profundo #8B1A1A
+   Paleta "Neon Noir" — negro metálico intenso
+   Fondo #08080A · Títulos oro #E8C25A · Botones vino #8B1F2D
+   Éxito verde neón · Errores rojo intenso #FF2E4D
    ============================================================ */
 @theme {
-  /* Fondo y superficies (negros con calidez) */
-  --color-bg: #14110d;
-  --color-chrome: #0f0d0a;
-  --color-inset: #1a1611;
-  --color-surface: #1f1a14;
-  --color-raised: #29221a;
+  /* Negros metálicos (con matiz frío, no gris plano) */
+  --color-bg: #08080a;
+  --color-chrome: #0b0b0e;
+  --color-inset: #0f0f13;
+  --color-surface: #14141a;
+  --color-raised: #1b1b22;
 
-  /* Bordes */
-  --color-line: #322a20;
-  --color-line-strong: #473c2d;
+  /* Bordes metálicos */
+  --color-line: #26262f;
+  --color-line-strong: #383845;
 
-  /* Texto */
-  --color-fg: #f5f1e8;
-  --color-fg-soft: #c4b9a4;
-  --color-fg-mute: #948873;
+  /* Textos: blanco puro y sus derivados */
+  --color-fg: #ffffff;
+  --color-fg-soft: #c9c9d4;
+  --color-fg-mute: #8c8c9c;
 
-  /* Acento 1 — Oro profundo #B8860B */
-  --color-accent: #6b5310;
-  --color-accent-hover: #7d6215;
-  --color-accent-soft: #4a390b;
-  --color-accent-text: #e8c766;
+  /* Acento 1 — Rojo vino (carrito, foco, acentos) */
+  --color-accent: #6d1622;
+  --color-accent-hover: #851b2a;
+  --color-accent-soft: #450e16;
+  --color-accent-text: #ff8095;
 
-  /* Acento 2 — Rojo profundo #8B1A1A */
-  --color-ruby: #6e1414;
-  --color-ruby-hover: #851919;
-  --color-ruby-soft: #4d0e0e;
-  --color-ruby-text: #f0a09a;
+  /* Acento 2 — Vino profundo (precios, montos) */
+  --color-ruby: #7b1a28;
+  --color-ruby-hover: #93202f;
+  --color-ruby-soft: #51121a;
+  --color-ruby-text: #ff9aa8;
 
-  /* Botón / CTA — Oro #C9A227 */
-  --color-cta: #b8860b;
-  --color-cta-hover: #d19a1c;
-  --color-cta-dark: #8f6a08;
-  --color-cta-text: #f2d98f;
+  /* Botón / CTA — Rojo vino */
+  --color-cta: #8b1f2d;
+  --color-cta-hover: #a5273a;
+  --color-cta-dark: #6d1622;
+  --color-cta-text: #ff8095;
+
+  /* Dorado: reservado para títulos */
+  --color-gold: #e8c25a;
+  --color-gold-dim: #b8912f;
+  --color-gold-soft: #4a3a16;
 
   /* Estados */
-  --color-success: #d4b04a;
-  --color-danger: #e05555;
-  --color-info: #d9b45e;
+  --color-success: #45e08c;
+  --color-danger: #ff2e4d;
+  --color-info: #22d3ee;
 
   --font-serif: "Playfair Display", Georgia, serif;
 }
@@ -57,27 +62,29 @@
 }
 
 html {
-  background-color: #14110d;
+  background-color: #08080a;
 }
 
 body {
   margin: 0;
-  background-color: #14110d;
+  background-color: #08080a;
+  /* Brillos neón: vino arriba, dorado tenue abajo, más un barrido metálico. */
   background-image:
-    radial-gradient(120% 55% at 50% 0%, rgba(184, 134, 11, 0.22) 0%, rgba(184, 134, 11, 0) 62%),
-    radial-gradient(90% 45% at 100% 100%, rgba(139, 26, 26, 0.18) 0%, rgba(139, 26, 26, 0) 58%);
+    radial-gradient(120% 55% at 50% 0%, rgba(139, 31, 45, 0.22) 0%, rgba(139, 31, 45, 0) 62%),
+    radial-gradient(90% 45% at 100% 100%, rgba(232, 194, 90, 0.09) 0%, rgba(232, 194, 90, 0) 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 28%);
   background-attachment: fixed;
-  color: #f5f1e8;
+  color: #ffffff;
   font-family: "Playfair Display", Georgia, serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
 
-/* Títulos dentro de las páginas: más marcados y con profundidad */
+/* Títulos en dorado con halo sutil */
 h1,
 h2 {
   letter-spacing: -0.01em;
-  text-shadow: 0 2px 16px rgba(184, 134, 11, 0.28);
+  text-shadow: 0 0 18px rgba(232, 194, 90, 0.28);
 }
 
 /* Números y montos: tabulares para que se lean alineados */
@@ -87,8 +94,8 @@ h2 {
 }
 
 ::selection {
-  background: #b8860b;
-  color: #f5f1e8;
+  background: #8b1f2d;
+  color: #ffffff;
 }
 
 ::placeholder {
@@ -101,12 +108,12 @@ h2 {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #14110d;
+  background: #08080a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #473c2d;
+  background: #2f2f38;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b5a3e;
+  background: #4a4a58;
 }

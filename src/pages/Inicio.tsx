@@ -48,12 +48,12 @@ export default function Inicio() {
         <div
           className={`rounded-2xl border p-4 ${
             register
-              ? 'border-cta-text/40 bg-cta/15'
+              ? 'border-success/40 bg-success/10'
               : 'border-danger/40 bg-danger/10'
           }`}
         >
           <div className="flex items-center justify-between">
-            <p className={`text-xs font-bold uppercase tracking-wider ${register ? 'text-cta-text' : 'text-danger'}`}>
+            <p className={`text-xs font-bold uppercase tracking-wider ${register ? 'text-success' : 'text-danger'}`}>
               {register ? 'Caja abierta' : 'Caja cerrada'}
             </p>
             <span className="text-xs text-fg-mute">Ver caja →</span>
@@ -71,7 +71,7 @@ export default function Inicio() {
         </div>
       </Link>
 
-      <h2 className="mb-3 text-lg font-semibold text-fg">Resumen de hoy</h2>
+      <h2 className="mb-3 text-lg font-semibold text-gold">Resumen de hoy</h2>
       <div className="flex flex-col gap-3">
         <Card>
           <p className="text-sm text-fg-mute">Ventas</p>

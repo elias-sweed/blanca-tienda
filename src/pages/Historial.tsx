@@ -249,7 +249,7 @@ function ClosuresHistory() {
               <div className="text-right">
                 <p
                   className={`font-bold ${
-                    c.difference === 0 ? 'text-cta-text' : c.difference > 0 ? 'text-info' : 'text-danger'
+                    c.difference === 0 ? 'text-success' : c.difference > 0 ? 'text-info' : 'text-danger'
                   }`}
                 >
                   {c.difference === 0
@@ -285,7 +285,7 @@ function ClosuresHistory() {
                 <span className="text-fg-soft">Diferencia</span>
                 <span
                   className={`font-bold ${
-                    c.difference === 0 ? 'text-cta-text' : c.difference > 0 ? 'text-info' : 'text-danger'
+                    c.difference === 0 ? 'text-success' : c.difference > 0 ? 'text-info' : 'text-danger'
                   }`}
                 >
                   {c.difference > 0 ? '+' : ''}S/ {round2(c.difference).toFixed(2)}
