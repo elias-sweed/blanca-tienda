@@ -125,26 +125,26 @@ export default function Caja() {
         </>
       ) : (
         <>
-          <div className="mb-4 rounded-2xl border border-success/40 bg-success/10 p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-success">Caja abierta</p>
+          <div className="mb-4 rounded-2xl border border-line-active/60 bg-selected p-4 shadow-[0_0_24px_rgba(0,245,255,0.2)]">
+            <p className="text-xs font-bold uppercase tracking-wider text-title-accent">Caja abierta</p>
             <p className="mt-1 text-sm text-fg-mute">
               Desde {new Date(register.openedAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
             </p>
             <div className="mb-3 flex justify-between text-lg font-bold">
               <span className="text-fg-soft">Ganado hoy</span>
-              <span className="text-ruby-text">S/ {totalVendido.toFixed(2)}</span>
+              <span className="text-fg">S/ {totalVendido.toFixed(2)}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Card>
               <p className="text-sm text-fg-mute">Ganado hoy</p>
-              <p className="text-2xl font-bold text-ruby-text">S/ {totalVendido.toFixed(2)}</p>
+              <p className="mt-1 text-2xl font-bold text-fg">S/ {totalVendido.toFixed(2)}</p>
               <p className="text-xs text-fg-mute">{ordered.length} ventas</p>
             </Card>
             <Card>
               <p className="text-sm text-fg-mute">Efectivo del día</p>
-              <p className="text-2xl font-bold text-accent-text">S/ {esperadoEnGaveta.toFixed(2)}</p>
+              <p className="mt-1 text-2xl font-bold text-fg">S/ {esperadoEnGaveta.toFixed(2)}</p>
               <p className="text-xs text-fg-mute">Solo efectivo</p>
             </Card>
           </div>

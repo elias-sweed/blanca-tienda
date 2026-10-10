@@ -25,13 +25,13 @@
   --color-title: #ffffff;
   --color-title-accent: #00f5ff;
   --color-fg: #f1f0ff;
-  --color-fg-soft: #b7b7cc;
-  --color-fg-mute: #9292ad;
+  --color-fg-soft: #00eef9;
+  --color-fg-mute: #6ee9f7;
 
-  /* Botón principal — cian */
-  --color-cta: #00f5ff;
-  --color-cta-hover: #5cf9ff;
-  --color-cta-dark: #00c4cc;
+  /* Botón principal — cian neón con texto blanco */
+  --color-cta: #00909f;
+  --color-cta-hover: #00b0c0;
+  --color-cta-dark: #00707d;
   --color-cta-text: #00f5ff;
 
   /* Botón secundario y enlaces — violeta */

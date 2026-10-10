@@ -48,14 +48,14 @@ export default function Inicio() {
         <div
           className={`rounded-2xl border p-4 transition active:scale-[0.99] ${
             register
-              ? 'border-success/40 bg-success/10'
+              ? 'border-line-active/60 bg-selected shadow-[0_0_24px_rgba(0,245,255,0.2)]'
               : 'border-accent/50 bg-accent-soft/50'
           }`}
         >
           {register ? (
             <>
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wider text-success">Caja abierta</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-title-accent">Caja abierta</p>
                 <span className="text-xs text-fg-mute">Ver caja →</span>
               </div>
               <p className="mt-1 text-2xl font-bold text-fg">S/ {(cash?.esperado ?? 0).toFixed(2)}</p>
@@ -73,8 +73,8 @@ export default function Inicio() {
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between rounded-xl bg-cta px-4 py-3 shadow-[0_0_20px_rgba(0,245,255,0.45)]">
-                <span className="font-bold text-bg">Toca aquí para abrir caja</span>
-                <span className="text-lg text-bg">→</span>
+                <span className="font-bold text-white">Toca aquí para abrir caja</span>
+                <span className="text-lg text-white">→</span>
               </div>
             </>
           )}
@@ -85,7 +85,7 @@ export default function Inicio() {
       <div className="flex flex-col gap-3">
         <Card>
           <p className="text-sm text-fg-mute">Ventas</p>
-          <p className="text-2xl font-bold text-ruby-text">S/ {(stats?.total ?? 0).toFixed(2)}</p>
+          <p className="mt-1 text-2xl font-bold text-fg">S/ {(stats?.total ?? 0).toFixed(2)}</p>
           <p className="text-sm text-fg-mute">{stats?.count ?? 0} ventas registradas</p>
         </Card>
         <Card>

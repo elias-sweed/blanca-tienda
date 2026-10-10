@@ -70,12 +70,12 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
           <Button size="lg" className="w-full ring-4 ring-cta/50" onClick={onAbrir}>
             <TrueFocus
               sentence="Abrir caja"
-              borderColor="#00F5FF"
+              borderColor="#ffffff"
               glowColor="rgba(0, 245, 255, 0.95)"
               blurAmount={2}
               fontSize="1.6rem"
-              inactiveColor="rgba(5, 5, 10, 0.45)"
-              activeColor="#05050A"
+              inactiveColor="rgba(255, 255, 255, 0.5)"
+              activeColor="#ffffff"
               animationDuration={0.6}
               pauseBetweenAnimations={0.7}
             />
