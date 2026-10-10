@@ -112,7 +112,7 @@ export default function Caja() {
 
           {closures && closures.length > 0 && (
             <div className="mt-6">
-              <h2 className="mb-2 text-lg font-bold text-gold">Cierres anteriores</h2>
+              <h2 className="mb-2 text-lg font-bold text-title">Cierres anteriores</h2>
               <div className="flex flex-col gap-3">
                 {closures.map((c) => (
                   <Card key={c.id}>
@@ -150,7 +150,7 @@ export default function Caja() {
           </div>
 
           <div className="mt-4">
-            <h2 className="mb-2 text-lg font-bold text-gold">Por método de pago</h2>
+            <h2 className="mb-2 text-lg font-bold text-title">Por método de pago</h2>
             <div className="flex flex-col gap-2">
               {METODOS.map((m) => (
                 <div key={m.id} className="flex items-center justify-between rounded-xl border border-line bg-inset px-4 py-3">
@@ -162,7 +162,7 @@ export default function Caja() {
           </div>
 
           <div className="mt-4">
-            <h2 className="mb-2 text-lg font-bold text-gold">Ventas de esta caja</h2>
+            <h2 className="mb-2 text-lg font-bold text-title">Ventas de esta caja</h2>
             {ordered.length === 0 ? (
               <EmptyState title="Sin ventas" description="Las ventas de esta caja aparecerán aquí." />
             ) : (
@@ -218,7 +218,7 @@ export default function Caja() {
                 }}
                 className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition active:scale-[0.98] ${
                   resultado === op.id
-                    ? 'border-accent-text bg-accent text-fg'
+                    ? 'border-line-active bg-selected text-label-active'
                     : 'border-line bg-inset text-fg-soft'
                 }`}
               >

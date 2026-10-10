@@ -10,12 +10,12 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-gradient-to-b from-cta-hover to-cta text-white border border-accent-text/40 shadow-[0_0_20px_rgba(139,31,45,0.45)] shadow-lg shadow-black/70 hover:brightness-110 active:from-cta-dark active:to-cta-dark active:scale-[0.98]',
+    'bg-gradient-to-b from-cta-hover to-cta text-bg border border-cta hover:brightness-110 active:from-cta-dark active:to-cta-dark active:scale-[0.98] shadow-[0_0_24px_rgba(0,245,255,0.5)] shadow-lg shadow-black/70',
   secondary:
-    'bg-raised text-cta-text border border-cta/50 hover:bg-cta/15 active:bg-cta/25 active:scale-[0.98]',
+    'bg-gradient-to-b from-accent-hover to-accent text-white border border-accent hover:brightness-110 active:scale-[0.98] shadow-[0_0_20px_rgba(139,0,255,0.45)] shadow-lg shadow-black/70',
   danger:
-    'bg-danger text-white border border-danger hover:brightness-110 active:scale-[0.98] shadow-[0_0_20px_rgba(255,46,77,0.5)] shadow-lg shadow-black/70',
-  ghost: 'bg-transparent text-fg-soft border border-transparent hover:text-fg hover:bg-raised active:bg-ruby/20',
+    'bg-danger text-white border border-danger hover:brightness-110 active:scale-[0.98] shadow-[0_0_22px_rgba(255,23,68,0.55)] shadow-lg shadow-black/70',
+  ghost: 'bg-transparent text-accent-text border border-transparent hover:text-fg hover:bg-hover active:scale-[0.98]',
 }
 
 const sizes: Record<Size, string> = {

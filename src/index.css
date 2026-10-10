@@ -2,54 +2,62 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Paleta "Neon Noir" — negro metálico intenso
-   Fondo #08080A · Títulos oro #E8C25A · Botones vino #8B1F2D
-   Éxito verde neón · Errores rojo intenso #FF2E4D
+   Paleta "Cyber Neon" — violeta profundo con neones
+   Fondo #05050A · Títulos #FFFFFF · Botón cian #00F5FF
+   Secundario violeta #8B00FF · Precios magenta #FF2BD6
    ============================================================ */
 @theme {
-  /* Negros metálicos (con matiz frío, no gris plano) */
-  --color-bg: #08080a;
-  --color-chrome: #0b0b0e;
-  --color-inset: #0f0f13;
-  --color-surface: #14141a;
-  --color-raised: #1b1b22;
+  /* Fondos */
+  --color-bg: #05050a;
+  --color-chrome: #090610;
+  --color-inset: #0d0a18;
+  --color-surface: #100d1c;
+  --color-raised: #191329;
+  --color-selected: #251440;
+  --color-hover: #351454;
 
-  /* Bordes metálicos */
-  --color-line: #26262f;
-  --color-line-strong: #383845;
+  /* Bordes */
+  --color-line: #30213f;
+  --color-line-strong: #4a3266;
+  --color-line-active: #00f5ff;
 
-  /* Textos: blanco puro y sus derivados */
-  --color-fg: #ffffff;
-  --color-fg-soft: #c9c9d4;
-  --color-fg-mute: #8c8c9c;
+  /* Textos */
+  --color-title: #ffffff;
+  --color-title-accent: #00f5ff;
+  --color-fg: #f1f0ff;
+  --color-fg-soft: #b7b7cc;
+  --color-fg-mute: #9292ad;
 
-  /* Acento 1 — Rojo vino (carrito, foco, acentos) */
-  --color-accent: #6d1622;
-  --color-accent-hover: #851b2a;
-  --color-accent-soft: #450e16;
-  --color-accent-text: #ff8095;
+  /* Botón principal — cian */
+  --color-cta: #00f5ff;
+  --color-cta-hover: #5cf9ff;
+  --color-cta-dark: #00c4cc;
+  --color-cta-text: #00f5ff;
 
-  /* Acento 2 — Vino profundo (precios, montos) */
-  --color-ruby: #7b1a28;
-  --color-ruby-hover: #93202f;
-  --color-ruby-soft: #51121a;
-  --color-ruby-text: #ff9aa8;
+  /* Botón secundario y enlaces — violeta */
+  --color-accent: #8b00ff;
+  --color-accent-hover: #a733ff;
+  --color-accent-soft: #3d0070;
+  --color-accent-text: #00d9ff;
 
-  /* Botón / CTA — Rojo vino */
-  --color-cta: #8b1f2d;
-  --color-cta-hover: #a5273a;
-  --color-cta-dark: #6d1622;
-  --color-cta-text: #ff8095;
+  /* Label activo — magenta */
+  --color-label-active: #ff00e5;
 
-  /* Dorado: reservado para títulos */
-  --color-gold: #e8c25a;
-  --color-gold-dim: #b8912f;
-  --color-gold-soft: #4a3a16;
+  /* Precios y montos */
+  --color-ruby: #7a0a5c;
+  --color-ruby-hover: #9c0d76;
+  --color-ruby-soft: #4a0536;
+  --color-ruby-text: #ff2bd6;
 
   /* Estados */
-  --color-success: #45e08c;
-  --color-danger: #ff2e4d;
-  --color-info: #22d3ee;
+  --color-success: #39ff14;
+  --color-danger: #ff1744;
+  --color-warning: #ffff00;
+  --color-info: #2864ff;
+
+  /* Glows */
+  --color-glow-cyan: #00f5ff;
+  --color-glow-violet: #8b00ff;
 
   --font-serif: "Playfair Display", Georgia, serif;
 }
@@ -62,29 +70,29 @@
 }
 
 html {
-  background-color: #08080a;
+  background-color: #05050a;
 }
 
 body {
   margin: 0;
-  background-color: #08080a;
-  /* Brillos neón: vino arriba, dorado tenue abajo, más un barrido metálico. */
+  background-color: #05050a;
+  /* Halos neón: violeta arriba, cian abajo y barrido metálico. */
   background-image:
-    radial-gradient(120% 55% at 50% 0%, rgba(139, 31, 45, 0.22) 0%, rgba(139, 31, 45, 0) 62%),
-    radial-gradient(90% 45% at 100% 100%, rgba(232, 194, 90, 0.09) 0%, rgba(232, 194, 90, 0) 58%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0) 28%);
+    radial-gradient(120% 55% at 50% 0%, rgba(139, 0, 255, 0.20) 0%, rgba(139, 0, 255, 0) 62%),
+    radial-gradient(90% 45% at 100% 100%, rgba(0, 245, 255, 0.12) 0%, rgba(0, 245, 255, 0) 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 28%);
   background-attachment: fixed;
-  color: #ffffff;
+  color: #f1f0ff;
   font-family: "Playfair Display", Georgia, serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
 
-/* Títulos en dorado con halo sutil */
+/* Títulos en blanco con halo cian */
 h1,
 h2 {
   letter-spacing: -0.01em;
-  text-shadow: 0 0 18px rgba(232, 194, 90, 0.28);
+  text-shadow: 0 0 22px rgba(0, 245, 255, 0.28);
 }
 
 /* Números y montos: tabulares para que se lean alineados */
@@ -94,8 +102,8 @@ h2 {
 }
 
 ::selection {
-  background: #8b1f2d;
-  color: #ffffff;
+  background: #00f5ff;
+  color: #05050a;
 }
 
 ::placeholder {
@@ -108,12 +116,12 @@ h2 {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #08080a;
+  background: #05050a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2f2f38;
+  background: #30213f;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a4a58;
+  background: #4a3266;
 }

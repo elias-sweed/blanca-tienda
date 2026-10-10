@@ -55,27 +55,27 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
     >
       <div
         data-guia-panel
-        className="w-full max-w-sm rounded-3xl border border-cta/50 bg-raised p-6 shadow-[0_0_40px_rgba(139,31,45,0.35)] shadow-2xl shadow-black/90"
+        className="w-full max-w-sm rounded-3xl border border-line-active bg-raised p-6 shadow-[0_0_40px_rgba(139,0,255,0.35)] shadow-2xl shadow-black/90"
       >
         <div className="flex flex-col items-center gap-4 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gold/20 text-3xl">🔒</span>
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/25 text-3xl">🔒</span>
 
           <div>
-            <p className="text-xl font-bold text-gold">Primero tienes que abrir la caja</p>
+            <p className="text-xl font-bold text-title">Primero tienes que abrir la caja</p>
             <p className="mt-2 text-sm text-fg-mute">
               No puedes vender sin caja abierta. Empieza en 0 y tus ventas del día se anotan solas.
             </p>
           </div>
 
-          <Button size="lg" className="w-full ring-4 ring-gold/50" onClick={onAbrir}>
+          <Button size="lg" className="w-full ring-4 ring-cta/50" onClick={onAbrir}>
             <TrueFocus
               sentence="Abrir caja"
-              borderColor="#f2d98f"
-              glowColor="rgba(255, 215, 106, 0.9)"
+              borderColor="#00F5FF"
+              glowColor="rgba(0, 245, 255, 0.95)"
               blurAmount={2}
               fontSize="1.6rem"
-              inactiveColor="rgba(255, 255, 255, 0.45)"
-              activeColor="#ffe9a8"
+              inactiveColor="rgba(5, 5, 10, 0.45)"
+              activeColor="#05050A"
               animationDuration={0.6}
               pauseBetweenAnimations={0.7}
             />

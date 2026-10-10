@@ -16,7 +16,7 @@ export function Modal({ open, title, onClose, children }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
-          <h2 className="text-xl font-bold text-gold">{title}</h2>
+          <h2 className="text-xl font-bold text-title">{title}</h2>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-inset text-lg leading-none text-fg-soft transition hover:bg-ruby hover:text-fg active:bg-ruby"

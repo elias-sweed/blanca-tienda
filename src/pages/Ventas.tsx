@@ -146,9 +146,9 @@ export default function Ventas() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-sm rounded-3xl border border-line-strong bg-raised p-6 shadow-2xl shadow-black/80">
             <div className="flex flex-col items-center gap-4 text-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gold/20 text-3xl">🔒</span>
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/25 text-3xl">🔒</span>
               <div>
-                <p className="text-xl font-bold text-gold">Antes de vender, abre la caja</p>
+                <p className="text-xl font-bold text-title">Antes de vender, abre la caja</p>
                 <p className="mt-2 text-sm text-fg-mute">
                   La caja guarda las ventas del día. Ábrela para empezar a vender. Tus ventas se anotan solas, no tienes que escribir nada.
                 </p>
@@ -183,7 +183,7 @@ export default function Ventas() {
 
       {categories.map(({ category, items }) => (
         <div key={category} className="mb-6">
-          <h2 className="mb-2 text-lg font-bold text-gold">{category}</h2>
+          <h2 className="mb-2 text-lg font-bold text-title">{category}</h2>
           <div className="grid grid-cols-2 gap-3">
             {items.map(({ product, variant }) => (
               <Card key={variant.id} className="flex flex-col">
@@ -237,12 +237,12 @@ export default function Ventas() {
       {/* Floating Cart Button */}
       <button
         onClick={() => setOpenCart(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-[0_0_22px_rgba(139,31,45,0.6)] shadow-lg shadow-black/70 ring-1 ring-accent-text/40 transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-[0_0_24px_rgba(0,245,255,0.55)] shadow-lg shadow-black/70 ring-1 ring-cta/40 transition active:scale-95"
         aria-label="Abrir carrito"
       >
         🛒
         {cartCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-danger text-xs font-bold text-white shadow-[0_0_10px_rgba(255,46,77,0.8)]">
+          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-label-active text-xs font-bold text-white shadow-[0_0_10px_rgba(255,0,229,0.8)]">
             {cartCount}
           </span>
         )}
@@ -475,8 +475,8 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
                   onClick={() => setMethod(p.id)}
                   className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${
                     method === p.id
-                      ? 'border-accent-text bg-accent text-fg'
-                      : 'border-line bg-inset text-fg-mute hover:border-line-strong hover:text-fg-soft'
+                      ? 'border-line-active bg-selected text-label-active'
+                      : 'border-line bg-inset text-fg-mute hover:bg-hover hover:border-line-active hover:text-fg'
                   }`}
                 >
                   {p.label}
@@ -598,8 +598,8 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
                     onClick={() => setMethod(p.id)}
                     className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${
                       method === p.id
-                        ? 'border-accent-text bg-accent text-fg'
-                        : 'border-line bg-inset text-fg-mute hover:border-line-strong hover:text-fg-soft'
+                        ? 'border-line-active bg-selected text-label-active'
+                        : 'border-line bg-inset text-fg-mute hover:bg-hover hover:border-line-active hover:text-fg'
                     }`}
                   >
                     {p.label}

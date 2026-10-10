@@ -11,7 +11,7 @@ export function ConnectionStatus() {
       }`}
     >
       <span
-        className={`h-2 w-2 rounded-full ${online ? 'bg-success shadow-[0_0_8px_rgba(69,224,140,0.9)]' : 'bg-danger shadow-[0_0_8px_rgba(255,46,77,0.9)]'}`}
+        className={`h-2 w-2 rounded-full ${online ? 'bg-success shadow-[0_0_8px_rgba(57,255,20,0.9)]' : 'bg-danger shadow-[0_0_8px_rgba(255,23,68,0.9)]'}`}
       />
       {online ? 'Conectado' : 'Sin conexión'}
     </span>

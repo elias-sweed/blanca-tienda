@@ -43,8 +43,8 @@ export default function Historial() {
             onClick={() => setTab(t)}
             className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold capitalize ${
               tab === t
-                ? 'border-accent-text bg-accent text-fg'
-                : 'border-line bg-surface text-fg-mute hover:border-line-strong hover:text-fg-soft'
+                ? 'border-line-active bg-selected text-label-active'
+                : 'border-line bg-surface text-fg-mute hover:bg-hover hover:border-line-active hover:text-fg'
             }`}
           >
             {t}

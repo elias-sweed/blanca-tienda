@@ -49,7 +49,7 @@ export default function Inicio() {
           className={`rounded-2xl border p-4 transition active:scale-[0.99] ${
             register
               ? 'border-success/40 bg-success/10'
-              : 'border-gold/50 bg-gold/10'
+              : 'border-accent/50 bg-accent-soft/50'
           }`}
         >
           {register ? (
@@ -66,22 +66,22 @@ export default function Inicio() {
           ) : (
             <>
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold/20 text-2xl">🔒</span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/25 text-2xl">🔒</span>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold uppercase tracking-wider text-gold">Aún no abriste la caja</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-title-accent">Aún no abriste la caja</p>
                   <p className="text-sm text-fg-soft">Para comenzar a vender tienes que abrir caja</p>
                 </div>
               </div>
-              <div className="mt-3 flex items-center justify-between rounded-xl bg-gold/15 px-4 py-3">
-                <span className="font-bold text-gold">Toca aquí para abrir caja</span>
-                <span className="text-lg text-gold">→</span>
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-cta px-4 py-3 shadow-[0_0_20px_rgba(0,245,255,0.45)]">
+                <span className="font-bold text-bg">Toca aquí para abrir caja</span>
+                <span className="text-lg text-bg">→</span>
               </div>
             </>
           )}
         </div>
       </Link>
 
-      <h2 className="mb-3 text-lg font-semibold text-gold">Resumen de hoy</h2>
+      <h2 className="mb-3 text-lg font-semibold text-title">Resumen de hoy</h2>
       <div className="flex flex-col gap-3">
         <Card>
           <p className="text-sm text-fg-mute">Ventas</p>

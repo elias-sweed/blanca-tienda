@@ -23,7 +23,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
     <div className="mx-auto flex min-h-screen max-w-md flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-chrome/90 px-4 py-3 shadow-lg shadow-black/60 backdrop-blur-md">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gold">{title}</h1>
+          <h1 className="text-2xl font-bold text-title">{title}</h1>
           <ConnectionStatus />
         </div>
         <div className="mt-1 flex items-center justify-between text-xs text-fg-mute">
