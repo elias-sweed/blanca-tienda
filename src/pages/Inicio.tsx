@@ -46,27 +46,37 @@ export default function Inicio() {
     <AppLayout title="Inicio">
       <Link to="/caja" className="mb-4 block">
         <div
-          className={`rounded-2xl border p-4 ${
+          className={`rounded-2xl border p-4 transition active:scale-[0.99] ${
             register
               ? 'border-success/40 bg-success/10'
-              : 'border-danger/40 bg-danger/10'
+              : 'border-gold/50 bg-gold/10'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <p className={`text-xs font-bold uppercase tracking-wider ${register ? 'text-success' : 'text-danger'}`}>
-              {register ? 'Caja abierta' : 'Caja cerrada'}
-            </p>
-            <span className="text-xs text-fg-mute">Ver caja →</span>
-          </div>
           {register ? (
             <>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-success">Caja abierta</p>
+                <span className="text-xs text-fg-mute">Ver caja →</span>
+              </div>
               <p className="mt-1 text-2xl font-bold text-fg">S/ {(cash?.esperado ?? 0).toFixed(2)}</p>
               <p className="text-sm text-fg-mute">
                 Efectivo del día · {cash?.sales ?? 0} {cash?.sales === 1 ? 'venta' : 'ventas'}
               </p>
             </>
           ) : (
-            <p className="mt-1 text-sm text-fg-soft">Abre la caja para empezar a vender hoy</p>
+            <>
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold/20 text-2xl">🔒</span>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gold">Aún no abriste la caja</p>
+                  <p className="text-sm text-fg-soft">Para comenzar a vender tienes que abrir caja</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-gold/15 px-4 py-3">
+                <span className="font-bold text-gold">Toca aquí para abrir caja</span>
+                <span className="text-lg text-gold">→</span>
+              </div>
+            </>
           )}
         </div>
       </Link>

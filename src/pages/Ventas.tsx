@@ -36,7 +36,6 @@ export default function Ventas() {
   const [openCart, setOpenCart] = useState(false)
   const [openNew, setOpenNew] = useState(false)
   const [showOpenCashReminder, setShowOpenCashReminder] = useState(false)
-  const [dontShowAgain, setDontShowAgain] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Consulta si hay una caja abierta
@@ -67,8 +66,6 @@ export default function Ventas() {
 
     if (yaAvisoRef.current) return
     yaAvisoRef.current = true
-
-    if (localStorage.getItem('ventas-saltar-aviso-caja') === '1') return
 
     setShowOpenCashReminder(true)
     // Reproducir sonido de advertencia
@@ -149,7 +146,7 @@ export default function Ventas() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-sm rounded-3xl border border-line-strong bg-raised p-6 shadow-2xl shadow-black/80">
             <div className="flex flex-col items-center gap-4 text-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-danger/15 text-3xl">💰</span>
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gold/20 text-3xl">🔒</span>
               <div>
                 <p className="text-xl font-bold text-gold">Antes de vender, abre la caja</p>
                 <p className="mt-2 text-sm text-fg-mute">
@@ -160,24 +157,15 @@ export default function Ventas() {
                 size="lg"
                 className="w-full"
                 onClick={() => {
-                  if (dontShowAgain) {
-                    localStorage.setItem('ventas-saltar-aviso-caja', '1')
-                  }
                   setShowOpenCashReminder(false)
-                  navigate('/caja', { state: { fromVentas: true } })
+                  navigate('/caja')
                 }}
               >
                 Abrir caja
               </Button>
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-mute">
-                <input
-                  type="checkbox"
-                  checked={dontShowAgain}
-                  onChange={(e) => setDontShowAgain(e.target.checked)}
-                  className="h-4 w-4 accent-ruby"
-                />
-                No mostrar de nuevo
-              </label>
+              <p className="text-xs text-fg-mute">
+                Primero abre la caja. Después recién puedes vender.
+              </p>
             </div>
           </div>
         </div>

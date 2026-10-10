@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useLocation } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { AbrirCajaGuia } from '../components/layout/AbrirCajaGuia'
 import { Button } from '../components/ui/Button'
@@ -25,9 +24,6 @@ const METODOS: { id: Sale['paymentMethod']; label: string }[] = [
 
 export default function Caja() {
   const { show } = useToast()
-  const location = useLocation()
-  const fromVentas = (location.state as { fromVentas?: boolean } | null)?.fromVentas ?? false
-  const [showArrow, setShowArrow] = useState(false)
   const [closeModal, setCloseModal] = useState(false)
   const [resultado, setResultado] = useState<CierreResultado | null>(null)
   const [monto, setMonto] = useState('')
@@ -43,12 +39,10 @@ export default function Caja() {
 
   const register = openRegister?.register
 
-  // Si venimos de Ventas, mantener el botón resaltado permanentemente
-  useEffect(() => {
-    if (fromVentas && !register) {
-      setShowArrow(true)
-    }
-  }, [fromVentas, register])
+  // Mientras la caja siga cerrada, la guía es obligatoria: se muestre cómo se
+  // haya llegado aquí (desde Ventas, desde Inicio o del menú inferior).
+  const cashResolved = openRegister !== undefined
+  const mostrarGuia = cashResolved && !register
 
   // Aviso + sonido cuando se toca fuera del modal
 
@@ -274,10 +268,8 @@ export default function Caja() {
         </div>
       </Modal>
 
-      {/* Al venir desde Ventas, un modal guía al centro: solo responde "Abrir caja" */}
-      {showArrow && !register && (
-        <AbrirCajaGuia onAbrir={handleOpen} />
-      )}
+      {/* Mientras la caja siga cerrada, la guía es obligatoria */}
+      {mostrarGuia && <AbrirCajaGuia onAbrir={handleOpen} />}
     </AppLayout>
   )
 }
