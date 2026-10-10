@@ -7,7 +7,7 @@
    Secundario violeta #8B00FF · Precios magenta #FF2BD6
    ============================================================ */
 @theme {
-  /* Fondos */
+  /* ---- Fondos ---- */
   --color-bg: #05050a;
   --color-chrome: #090610;
   --color-inset: #0d0a18;
@@ -16,50 +16,111 @@
   --color-selected: #251440;
   --color-hover: #351454;
 
-  /* Bordes */
+  /* ---- Bordes ---- */
   --color-line: #30213f;
-  --color-line-strong: #4a3266;
+  --color-line-strong: #46305e;
   --color-line-active: #00f5ff;
 
-  /* Textos */
+  /* ---- Texto ---- */
   --color-title: #ffffff;
   --color-title-accent: #00f5ff;
   --color-fg: #f1f0ff;
-  --color-fg-soft: #00eef9;
-  --color-fg-mute: #6ee9f7;
+  --color-fg-soft: #b7b7cc;
+  --color-fg-mute: #9292ad;
 
-  /* Botón principal — cian neón con texto blanco */
-  --color-cta: #00909f;
-  --color-cta-hover: #00b0c0;
-  --color-cta-dark: #00707d;
+  /* ---- Acentos ---- */
+  --color-cta: #00f5ff;
+  --color-cta-hover: #66f8ff;
+  --color-cta-dark: #00c9d4;
   --color-cta-text: #00f5ff;
+  /* Superficie del botón: cian profundo para sostener la etiqueta blanca.
+     El cian puro #00F5FF queda como identidad (borde, glow, anillo). */
+  --color-cta-surface: #00909f;
+  --color-cta-surface-hi: #00b4c2;
+  --color-cta-surface-lo: #00707d;
 
-  /* Botón secundario y enlaces — violeta */
   --color-accent: #8b00ff;
   --color-accent-hover: #a733ff;
   --color-accent-soft: #3d0070;
   --color-accent-text: #00d9ff;
 
-  /* Label activo — magenta */
   --color-label-active: #ff00e5;
 
-  /* Precios y montos */
   --color-ruby: #7a0a5c;
   --color-ruby-hover: #9c0d76;
   --color-ruby-soft: #4a0536;
   --color-ruby-text: #ff2bd6;
 
-  /* Estados */
+  /* ---- Estados ---- */
   --color-success: #39ff14;
   --color-danger: #ff1744;
   --color-warning: #ffff00;
   --color-info: #2864ff;
 
-  /* Glows */
   --color-glow-cyan: #00f5ff;
   --color-glow-violet: #8b00ff;
 
+  /* ---- Animaciones: solo transform y opacity (compositor) ---- */
+  --animate-float-a: float-a 22s ease-in-out infinite;
+  --animate-float-b: float-b 28s ease-in-out infinite;
+  --animate-scanline: scanline 9s linear infinite;
+  --animate-pulse-soft: pulse-soft 1.8s ease-in-out infinite;
+
   --font-serif: "Playfair Display", Georgia, serif;
+}
+
+/* Sólo transform: ninguna de estas animaciones toca layout ni paint. */
+@keyframes float-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -26px, 0) scale(1.08);
+  }
+}
+
+@keyframes float-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, 22px, 0) scale(1.12);
+  }
+}
+
+/* La línea de escaneo se mueve con transform, no con top. */
+@keyframes scanline {
+  0% {
+    transform: translate3d(0, -100%, 0);
+  }
+  100% {
+    transform: translate3d(0, 100vh, 0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* Respeta la preferencia del sistema: sin movimiento, sin coste de GPU. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    
+  --font-serif: "Playfair Display", Georgia, serif;
+  }
 }
 
 /* Bordes neutros por defecto (Tailwind v4 usa currentColor) */
@@ -76,23 +137,19 @@ html {
 body {
   margin: 0;
   background-color: #05050a;
-  /* Halos neón: violeta arriba, cian abajo y barrido metálico. */
-  background-image:
-    radial-gradient(120% 55% at 50% 0%, rgba(139, 0, 255, 0.20) 0%, rgba(139, 0, 255, 0) 62%),
-    radial-gradient(90% 45% at 100% 100%, rgba(0, 245, 255, 0.12) 0%, rgba(0, 245, 255, 0) 58%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 28%);
-  background-attachment: fixed;
   color: #f1f0ff;
   font-family: "Playfair Display", Georgia, serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  /* Evita rebote de scroll en WebViews antiguas durante el rebote táctil. */
+  overscroll-behavior-y: none;
 }
 
-/* Títulos en blanco con halo cian */
+/* Títulos en blanco. El halo neón se resuelve con capas animadas por
+   opacidad en FondoNeon, no con text-shadow (repinta el texto cada frame). */
 h1,
 h2 {
   letter-spacing: -0.01em;
-  text-shadow: 0 0 22px rgba(0, 245, 255, 0.28);
 }
 
 /* Números y montos: tabulares para que se lean alineados */

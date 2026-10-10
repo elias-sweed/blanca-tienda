@@ -68,7 +68,7 @@ export default function Inventario() {
       {inactiveCount > 0 && (
         <button
           onClick={() => setShowInactive(!showInactive)}
-          className="mt-3 text-xs font-semibold text-fg-mute transition hover:text-fg-soft"
+          className="mt-3 text-xs font-semibold text-fg-mute transition-colors duration-150 hover:text-fg-soft"
         >
           {showInactive ? 'Ocultar' : 'Mostrar'} productos dados de baja ({inactiveCount})
         </button>
@@ -236,7 +236,7 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
             <span className="font-bold text-fg">Tallas y colores</span>
             <button
               onClick={() => setDrafts((ds) => [...ds, newDraft()])}
-              className="text-sm font-bold text-accent-text transition hover:text-accent"
+              className="text-sm font-bold text-accent-text transition-colors duration-150 hover:text-accent"
             >
               + Agregar
             </button>

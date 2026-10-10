@@ -109,7 +109,7 @@ export function StepperInput({
           type="button"
           onClick={() => mover(-step)}
           aria-label={`Restar ${step}`}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line-active/70 bg-gradient-to-b from-cta-hover to-cta text-2xl font-bold text-white shadow-[0_0_18px_rgba(0,245,255,0.4)] transition active:scale-95"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line-active/70 bg-gradient-to-b from-cta-hover to-cta text-2xl font-bold text-white shadow-[0_0_18px_rgba(0,245,255,0.4)] transition-transform duration-150 ease-out will-change-transform active:scale-95"
         >
           −
         </button>
@@ -128,7 +128,7 @@ export function StepperInput({
             placeholder={placeholder}
             inputMode="decimal"
             autoComplete="off"
-            className={`w-full rounded-xl border bg-inset py-3 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition focus:ring-2 focus:outline-none ${
+            className={`w-full rounded-xl border bg-inset py-3 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition-colors duration-150 focus:ring-2 focus:outline-none ${
               prefix ? 'pl-9' : 'pl-4'
             } ${value ? 'pr-10' : 'pr-3'} ${
               aviso ? 'border-danger ring-danger/40' : 'border-line focus:border-accent-text focus:ring-accent/40'
@@ -140,7 +140,7 @@ export function StepperInput({
               type="button"
               onClick={limpiar}
               aria-label="Borrar"
-              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-line-active/70 bg-gradient-to-b from-cta-hover to-cta text-base font-bold leading-none text-white shadow-[0_0_14px_rgba(0,245,255,0.4)] transition active:scale-90"
+              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-line-active/70 bg-gradient-to-b from-cta-hover to-cta text-base font-bold leading-none text-white shadow-[0_0_14px_rgba(0,245,255,0.4)] transition-transform duration-150 ease-out will-change-transform active:scale-90"
             >
               ×
             </button>
@@ -151,7 +151,7 @@ export function StepperInput({
           type="button"
           onClick={() => mover(step)}
           aria-label={`Sumar ${step}`}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line-active/70 bg-gradient-to-b from-cta-hover to-cta text-2xl font-bold text-white shadow-[0_0_18px_rgba(0,245,255,0.4)] transition active:scale-95"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-line-active/70 bg-gradient-to-b from-cta-hover to-cta text-2xl font-bold text-white shadow-[0_0_18px_rgba(0,245,255,0.4)] transition-transform duration-150 ease-out will-change-transform active:scale-95"
         >
           +
         </button>

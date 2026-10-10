@@ -46,7 +46,7 @@ export default function Inicio() {
     <AppLayout title="Inicio">
       <Link to="/caja" className="mb-4 block">
         <div
-          className={`rounded-2xl border p-4 transition active:scale-[0.99] ${
+          className={`rounded-2xl border p-4 transition-transform duration-150 ease-out will-change-transform active:scale-[0.99] ${
             register
               ? 'border-line-active/60 bg-selected shadow-[0_0_24px_rgba(0,245,255,0.2)]'
               : 'border-accent/50 bg-accent-soft/50'

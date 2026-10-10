@@ -216,7 +216,7 @@ export default function Caja() {
                   setResultado(op.id)
                   if (op.id === 'exacto') setMonto('')
                 }}
-                className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition active:scale-[0.98] ${
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors duration-150 ${
                   resultado === op.id
                     ? 'border-line-active bg-selected text-label-active'
                     : 'border-line bg-inset text-fg-soft'

@@ -3,29 +3,25 @@ import { useEffect, useRef, useState } from 'react'
 interface TrueFocusProps {
   sentence?: string
   separator?: string
-  blurAmount?: number
   borderColor?: string
-  glowColor?: string
   animationDuration?: number
   pauseBetweenAnimations?: number
   /** Tamaño de letra. */
   fontSize?: string
-  /** Color de la palabra sin enfocar. */
-  inactiveColor?: string
-  /** Color de la palabra enfocada (más brillo). */
+  /** Opacidad de la palabra sin enfocar. */
+  inactiveOpacity?: number
+  /** Color de la palabra enfocada. */
   activeColor?: string
 }
 
 export function TrueFocus({
   sentence = 'True Focus',
   separator = ' ',
-  blurAmount = 3,
-  borderColor = '#e11d48',
-  glowColor = 'rgba(225, 29, 72, 0.4)',
+  borderColor = '#00F5FF',
   animationDuration = 0.8,
   pauseBetweenAnimations = 1.2,
   fontSize = '1.25rem',
-  inactiveColor = 'rgba(255, 255, 255, 0.45)',
+  inactiveOpacity = 0.35,
   activeColor = '#ffffff',
 }: TrueFocusProps) {
   const words = sentence.split(separator)
@@ -35,7 +31,8 @@ export function TrueFocus({
   const [focusRect, setFocusRect] = useState({ x: 0, y: 0, width: 0, height: 0 })
   const rafRef = useRef<number | null>(null)
 
-  // Animación suave con intervalo
+  // El ciclo del foco es un intervalo de baja frecuencia: provoca un cambio de
+  // estado cada ~1s, muy por debajo del umbral en el que un re-render se nota.
   useEffect(() => {
     const interval = setInterval(
       () => {
@@ -101,15 +98,17 @@ export function TrueFocus({
               position: 'relative',
               fontSize,
               fontWeight: 900,
-              filter: isActive ? 'blur(0px)' : `blur(${blurAmount}px)`,
-              color: isActive ? activeColor : inactiveColor,
-              opacity: isActive ? 1 : 0.7,
-              transform: isActive ? 'scale(1.08)' : 'scale(1)',
-              textShadow: isActive ? `0 0 14px ${glowColor}` : 'none',
-              transition: `filter ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1), opacity ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1), transform ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1), color ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1), text-shadow ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1)`,
+              // Sin `filter: blur()` ni `text-shadow`: ambos repintan el texto en cada
+              // frame. El efecto de "enfoque" se resuelve con opacity + scale,
+              // que el compositor mueve en la GPU sin coste de paint.
+              color: activeColor,
+              opacity: isActive ? 1 : inactiveOpacity,
+              transform: isActive ? 'scale(1.1)' : 'scale(1)',
+              transition:
+                'opacity 200ms ease-out, transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
               outline: 'none',
               userSelect: 'none',
-              willChange: 'filter, opacity, transform',
+              willChange: 'transform, opacity',
             }}
           >
             {word}
@@ -126,12 +125,15 @@ export function TrueFocus({
           pointerEvents: 'none',
           boxSizing: 'content-box',
           border: 'none',
-          transform: `translate(${focusRect.x}px, ${focusRect.y}px)`,
+          // El marco se desplaza con translate3d (compositor). El tamaño se escribe
+          // sin transición: animarlo provocaría reflow, y ocurre una sola vez
+          // por cambio de palabra (~1s), nunca por frame.
+          transform: `translate3d(${focusRect.x}px, ${focusRect.y}px, 0)`,
           width: focusRect.width,
           height: focusRect.height,
           opacity: currentIndex >= 0 ? 1 : 0,
-          transition: `transform ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1), width ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1), height ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1), opacity ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1)`,
-          willChange: 'transform, width, height, opacity',
+          transition: `transform ${animationDuration}s cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms linear`,
+          willChange: 'transform, opacity',
         }}
       >
         {/* Esquina superior izquierda */}

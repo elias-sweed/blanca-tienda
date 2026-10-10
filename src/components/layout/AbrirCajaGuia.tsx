@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui/Button'
+import { Portal } from '../ui/Portal'
+import { Z_OVERLAY } from '../ui/Modal'
 import { TrueFocus } from '../ui/TrueFocus'
 import { useToast } from '../ui/Toast'
 import beepSound from '../../assets/Sounds/Warning/Beep.mp3'
@@ -39,20 +41,24 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
-      style={{
-        backdropFilter: desenfocado ? 'blur(10px)' : 'blur(0px)',
-        WebkitBackdropFilter: desenfocado ? 'blur(10px)' : 'blur(0px)',
-        transition: 'backdrop-filter 300ms ease, -webkit-backdrop-filter 300ms ease',
-      }}
-      onPointerDown={(e) => {
-        // Solo cuenta como toque fuera lo que no pertenece al panel.
-        if ((e.target as HTMLElement).closest('[data-guia-panel]')) return
-        e.preventDefault()
-        avisar()
-      }}
-    >
+    <Portal>
+      <div
+        className="fixed inset-0 flex items-center justify-center px-4"
+        style={{
+          zIndex: Z_OVERLAY,
+          // El aviso de toque fuera se resuelve con opacidad del fondo, no con
+          // backdrop-filter: animar un filtro obliga a recomponer toda la
+          // pantalla y hunde los FPS en WebViews antiguas.
+          backgroundColor: `rgba(5,5,10,${desenfocado ? 0.92 : 0.7})`,
+          transition: 'background-color 150ms linear',
+        }}
+        onPointerDown={(e) => {
+          // Solo cuenta como toque fuera lo que no pertenece al panel.
+          if ((e.target as HTMLElement).closest('[data-guia-panel]')) return
+          e.preventDefault()
+          avisar()
+        }}
+      >
       <div
         data-guia-panel
         className="w-full max-w-sm rounded-3xl border border-line-active bg-raised p-6 shadow-[0_0_40px_rgba(139,0,255,0.35)] shadow-2xl shadow-black/90"
@@ -71,10 +77,8 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
             <TrueFocus
               sentence="Abrir caja"
               borderColor="#ffffff"
-              glowColor="rgba(0, 245, 255, 0.95)"
-              blurAmount={2}
               fontSize="1.6rem"
-              inactiveColor="rgba(255, 255, 255, 0.5)"
+              inactiveOpacity={0.4}
               activeColor="#ffffff"
               animationDuration={0.6}
               pauseBetweenAnimations={0.7}
@@ -84,8 +88,9 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
           <Button variant="ghost" size="md" onClick={() => navigate('/')}>
             Volver al inicio
           </Button>
+            </div>
         </div>
       </div>
-    </div>
+    </Portal>
   )
 }

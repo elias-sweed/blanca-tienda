@@ -1,8 +1,14 @@
+import { SkeletonFilas } from '../cyber/Skeleton'
+
+/**
+ * Estados de carga sin spinner's rotatorio: usa skeletons estáticos que solo
+ * animan opacidad, lo que no fuerza repintado continuo en CPUs lentas.
+ */
 export function Spinner({ label = 'Cargando...' }: { label?: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 py-10 text-fg-mute/80">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-line-strong border-t-accent-text" />
-      <p className="text-sm">{label}</p>
+    <div className="flex flex-col gap-3" role="status" aria-label={label}>
+      <SkeletonFilas filas={3} />
+      <p className="sr-only">{label}</p>
     </div>
   )
 }

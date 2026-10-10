@@ -33,7 +33,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ show }}>
       {children}
       {/* En móvil el header ocupa ~64px: los avisos van justo debajo para no taparlo. */}
-      <div className="pointer-events-none fixed inset-x-0 top-[4.5rem] z-[70] flex flex-col items-center gap-2 px-4">
+      <div
+        className="pointer-events-none fixed inset-x-0 top-[4.5rem] z-[130] flex flex-col items-center gap-2 px-4"
+      >
         {toasts.map((t) => (
           <div
             key={t.id}

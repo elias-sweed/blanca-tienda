@@ -6,7 +6,8 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Input } from '../components/ui/Input'
-import { Modal } from '../components/ui/Modal'
+import { Modal, Z_OVERLAY } from '../components/ui/Modal'
+import { Portal } from '../components/ui/Portal'
 import { useToast } from '../components/ui/Toast'
 import { db } from '../lib/db'
 import { registerSale } from '../services/sales'
@@ -143,7 +144,11 @@ export default function Ventas() {
     <AppLayout title="Ventas">
       {/* Modal de aviso de caja cerrada al entrar a Ventas */}
       {showOpenCashReminder && cashResolved && !cashOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <Portal>
+          <div
+            className="fixed inset-0 flex items-center justify-center bg-black/80"
+            style={{ zIndex: Z_OVERLAY }}
+          >
           <div className="mx-4 w-full max-w-sm rounded-3xl border border-line-strong bg-raised p-6 shadow-2xl shadow-black/80">
             <div className="flex flex-col items-center gap-4 text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/25 text-3xl">🔒</span>
@@ -168,7 +173,8 @@ export default function Ventas() {
               </p>
             </div>
           </div>
-        </div>
+          </div>
+        </Portal>
       )}
 
       <div className="mb-4">
@@ -237,7 +243,7 @@ export default function Ventas() {
       {/* Floating Cart Button */}
       <button
         onClick={() => setOpenCart(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-[0_0_24px_rgba(0,245,255,0.55)] shadow-lg shadow-black/70 ring-1 ring-cta/40 transition active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-[0_0_24px_rgba(0,245,255,0.55)] shadow-lg shadow-black/70 ring-1 ring-cta/40 transition-transform duration-150 ease-out will-change-transform active:scale-95"
         aria-label="Abrir carrito"
       >
         🛒
@@ -399,14 +405,14 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
                   </span>
                   <button
                     onClick={() => startEdit(d)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong text-accent-text transition hover:bg-accent/20 active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong text-accent-text transition-colors duration-150 hover:bg-accent/20"
                     aria-label="Editar producto"
                   >
                     ✎
                   </button>
                   <button
                     onClick={() => removeDraft(d.key)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/40 text-danger transition hover:bg-danger/15 active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/40 text-danger transition-colors duration-150 hover:bg-danger/15"
                     aria-label="Eliminar producto"
                   >
                     ×
@@ -473,7 +479,7 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
                 <button
                   key={p.id}
                   onClick={() => setMethod(p.id)}
-                  className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${
+                  className={`rounded-xl border px-2 py-3 text-sm font-bold transition-colors duration-150 ${
                     method === p.id
                       ? 'border-line-active bg-selected text-label-active'
                       : 'border-line bg-inset text-fg-mute hover:bg-hover hover:border-line-active hover:text-fg'
@@ -571,9 +577,9 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => onUpdateQty(item.variantId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-raised font-bold text-accent-text transition hover:bg-accent/20">-</button>
+                <button onClick={() => onUpdateQty(item.variantId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-raised font-bold text-accent-text transition-colors duration-150 hover:bg-accent/20">-</button>
                 <span className="w-8 text-center font-bold">{item.quantity}</span>
-                <button onClick={() => onUpdateQty(item.variantId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-raised font-bold text-accent-text transition hover:bg-accent/20">+</button>
+                <button onClick={() => onUpdateQty(item.variantId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-raised font-bold text-accent-text transition-colors duration-150 hover:bg-accent/20">+</button>
                 <button onClick={() => onRemove(item.variantId)} className="ml-2 text-sm text-danger hover:underline">Eliminar</button>
               </div>
             </div>
@@ -596,7 +602,7 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
                   <button
                     key={p.id}
                     onClick={() => setMethod(p.id)}
-                    className={`rounded-xl border px-2 py-3 text-sm font-bold transition ${
+                    className={`rounded-xl border px-2 py-3 text-sm font-bold transition-colors duration-150 ${
                       method === p.id
                         ? 'border-line-active bg-selected text-label-active'
                         : 'border-line bg-inset text-fg-mute hover:bg-hover hover:border-line-active hover:text-fg'

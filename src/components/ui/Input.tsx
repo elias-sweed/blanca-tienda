@@ -17,7 +17,7 @@ export function Input({ label, error, className = '', id, ...props }: Props) {
       </label>
       <input
         id={inputId}
-        className={`w-full rounded-xl border border-line bg-inset px-4 py-3 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition focus:border-accent-text focus:ring-2 focus:ring-accent/40 focus:outline-none ${className}`}
+        className={`w-full rounded-xl border border-line bg-inset px-4 py-3 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition-colors duration-150 focus:border-accent-text focus:ring-2 focus:ring-accent/40 focus:outline-none ${className}`}
         {...props}
       />
       {error && <p className="text-sm text-danger">{error}</p>}
