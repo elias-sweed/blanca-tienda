@@ -1,17 +1,44 @@
-import { useEffect, useRef, useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
 import { Input } from '../components/ui/Input'
+import { LoadingState } from '../components/ui/LoadingState'
+import { LowStockAlert } from '../components/ui/LowStockAlert'
 import { Modal, Z_OVERLAY } from '../components/ui/Modal'
 import { Portal } from '../components/ui/Portal'
-import { useToast } from '../components/ui/Toast'
+import { SearchBox } from '../components/ui/SearchBox'
+import { SuccessState } from '../components/ui/SuccessState'
+import { useToast } from '../components/ui/ToastContext'
+import { useLowStock } from '../hooks/useLowStock'
+import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
 import { registerSale } from '../services/sales'
+import type { Product, ProductVariant } from '../types/models'
+import {
+  addItem,
+  cartCount,
+  cartTotal,
+  clearCart,
+  removeItem,
+  setQuantity,
+  syncStock,
+  type CartItem,
+} from '../utils/cart'
 import { newId } from '../utils/ids'
+import { round2 } from '../utils/money'
+import {
+  IDLE_PAYMENT,
+  canSubmit,
+  computeChange,
+  paymentReducer,
+  submitLabel,
+} from '../utils/payment'
+import { rankMatches } from '../utils/search'
+import { firstError, validateAmount, validateName, validateQuantity, validatePayment } from '../utils/validation'
 import beepSound from '../assets/Sounds/Warning/Beep.mp3'
 
 const PAYMENTS = [
@@ -20,14 +47,10 @@ const PAYMENTS = [
   { id: 'plin', label: 'Plin' },
 ] as const
 
-interface CartItem {
-  variantId: string
-  name: string
-  price: number
-  size?: string
-  color?: string
-  quantity: number
-  available: number
+/** Producto + variante tal como se lista en la pantalla de ventas. */
+interface Item {
+  product: Product
+  variant: ProductVariant
 }
 
 export default function Ventas() {
@@ -36,50 +59,54 @@ export default function Ventas() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [openCart, setOpenCart] = useState(false)
   const [openNew, setOpenNew] = useState(false)
-  const [showOpenCashReminder, setShowOpenCashReminder] = useState(false)
+  // Solo se enciende (y se apaga) con acciones de la persona: cerrar el aviso
+  // o pedirlo de nuevo desde un modal. La visibilidad real se deriva abajo.
+  const [dismissed, setDismissed] = useState(false)
+  const [search, setSearch] = useState('')
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Consulta si hay una caja abierta
-  const openRegister = useLiveQuery(async () => {
+  // Caja abierta. `useQueryState` distingue "cargando" de "falló", así que si
+  // la lectura falla no se lanza la alarma de caja cerrada por error.
+  const [cashState, cashRetry] = useQueryState(async () => {
     const regs = await db.cashRegisters.where('status').equals('abierta').toArray()
-    return { register: regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0] ?? null }
+    return regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0] ?? null
   }, [])
 
-  // `undefined` mientras la consulta carga; solo cuando resuelve sabemos
-  // con certeza si hay caja abierta.
-  const cashResolved = openRegister !== undefined
-  const cashOpen = openRegister?.register != null
+  const cashResolved = cashState.status !== 'loading'
+  const cashOpen = cashState.status === 'ready' && cashState.data !== null
+  const cashFailed = cashState.status === 'error'
 
-  // Evita repetir el aviso y el sonido dentro de la misma visita.
-  const yaAvisoRef = useRef(false)
+  // El aviso se DERIVA de la caja en vez de escribirse desde un efecto: mientras
+  // la lectura carga no se avisa, si la base falla tampoco, y en cuanto se sabe
+  // que la caja está cerrada aparece solo. Si se abrió, desaparece solo.
+  const showOpenCashReminder = cashResolved && !cashFailed && !cashOpen && !dismissed
 
-  // Al entrar a Ventas: si ya se sabe que no hay caja abierta, mostrar el
-  // modal de aviso con sonido. Mientras carga no se avisa para que al volver
-  // de Caja no suene la alarma antes de tiempo.
+  // El sonido es lo único externo del aviso: va en el efecto, y solo una vez
+  // por visita para no repetir la alarma en cada re-render.
+  const beepHechoRef = useRef(false)
   useEffect(() => {
-    if (!cashResolved) return
-
-    if (cashOpen) {
-      setShowOpenCashReminder(false)
-      yaAvisoRef.current = true
+    if (!showOpenCashReminder) {
+      beepHechoRef.current = false
       return
     }
+    if (beepHechoRef.current) return
+    beepHechoRef.current = true
 
-    if (yaAvisoRef.current) return
-    yaAvisoRef.current = true
-
-    setShowOpenCashReminder(true)
-    // Reproducir sonido de advertencia
     try {
       if (!audioRef.current) {
         audioRef.current = new Audio(beepSound)
       }
       audioRef.current.currentTime = 0
-      audioRef.current.play().catch(() => {})
-    } catch {}
-  }, [cashResolved, cashOpen])
+      audioRef.current.play().catch(() => {
+        // Sin audio disponible (permisos o dispositivo sin volumen): el aviso
+        // visual sigue funcionando, así que no hace falta frenar nada aquí.
+      })
+    } catch {
+      // Mismo caso: si el navegador bloquea el sonido, la app continúa igual.
+    }
+  }, [showOpenCashReminder])
 
-  const products = useLiveQuery(async () => {
+  const [productsState, productsRetry] = useQueryState<Item[]>(async () => {
     const all = await db.products.filter((p) => p.active && !p.deleted).toArray()
     const variants = await db.productVariants.toArray()
     return all.flatMap((p) =>
@@ -87,10 +114,24 @@ export default function Ventas() {
     )
   }, [])
 
-  type Item = NonNullable<typeof products>[number]
+  const lowStock = useLowStock()
 
-  const outOfStock: Item[] = (products ?? []).filter(({ variant }) => variant.quantity <= 0)
-  const inStock: Item[] = (products ?? []).filter(({ variant }) => variant.quantity > 0)
+  // Búsqueda difusa: tolera acentos, mayúsculas y letras fuera de orden.
+  const coincidencias = useMemo(
+    () =>
+      rankMatches(productsState.data ?? [], search, ({ product, variant }) => [
+        product.name,
+        product.category ?? '',
+        variant.size ?? '',
+        variant.color ?? '',
+      ]),
+    [productsState.data, search],
+  )
+
+  const hayProductos = (productsState.data ?? []).length > 0
+
+  const outOfStock: Item[] = coincidencias.filter(({ variant }) => variant.quantity <= 0)
+  const inStock: Item[] = coincidencias.filter(({ variant }) => variant.quantity > 0)
 
   const categories = inStock.reduce<{ category: string; items: Item[] }[]>((acc, item) => {
     const cat = item.product.category || 'Sin categoría'
@@ -100,50 +141,52 @@ export default function Ventas() {
     return acc
   }, [])
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  // Últimos productos válidos (se conservan aunque la consulta re-intente).
+  const productsData = productsState.data
 
-  function addToCart(item: Item) {
-    const existing = cart.find((c) => c.variantId === item.variant.id)
-    if (existing) {
-      if (existing.quantity >= item.variant.quantity) return
-      setCart(cart.map((c) => c.variantId === item.variant.id ? { ...c, quantity: c.quantity + 1 } : c))
-    } else {
-      if (item.variant.quantity <= 0) return
-      setCart([...cart, {
-        variantId: item.variant.id,
-        name: item.product.name,
-        price: item.product.price,
-        size: item.variant.size,
-        color: item.variant.color,
-        quantity: 1,
-        available: item.variant.quantity,
-      }])
-    }
+  /**
+   * Carrito ajustado al stock real. Si mientras se armaba otra venta se
+   * llevaron unidades (o el producto se dio de baja), se recorta aquí y se
+   * avisa con el número verdadero, en lugar de fallar al cobrar.
+   */
+  function conStockReal(actual: CartItem[]): CartItem[] {
+    if (!productsData) return actual
+    const stock = new Map(productsData.map(({ variant }) => [variant.id, variant.quantity]))
+    const sincronizado = syncStock(actual, stock)
+    if (sincronizado.error) show(sincronizado.error, 'warning')
+    return sincronizado.cart
   }
 
-  function removeFromCart(variantId: string) {
-    setCart(cart.filter((c) => c.variantId !== variantId))
+  function handleAdd(item: Item) {
+    const result = addItem(conStockReal(cart), {
+      variantId: item.variant.id,
+      name: item.product.name,
+      price: item.product.price,
+      size: item.variant.size,
+      color: item.variant.color,
+      available: item.variant.quantity,
+    })
+    if (result.error) show(result.error, 'warning')
+    setCart(result.cart)
   }
 
-  function updateCartQty(variantId: string, qty: number) {
-    if (qty <= 0) {
-      removeFromCart(variantId)
-      return
-    }
-    const item = cart.find((c) => c.variantId === variantId)
-    if (!item) return
-    if (qty > item.available) {
-      show(`Ya no hay más disponibles. Solo quedan ${item.available}. Agrega más en Inventario.`, 'error')
-      return
-    }
-    setCart(cart.map((c) => c.variantId === variantId ? { ...c, quantity: qty } : c))
+  function handleRemove(variantId: string) {
+    setCart(removeItem(cart, variantId).cart)
   }
+
+  function handleQty(variantId: string, qty: number) {
+    const result = setQuantity(conStockReal(cart), variantId, qty)
+    if (result.error) show(result.error, 'warning')
+    setCart(result.cart)
+  }
+
+  const total = cartTotal(cart)
+  const unidades = cartCount(cart)
 
   return (
     <AppLayout title="Ventas">
       {/* Modal de aviso de caja cerrada al entrar a Ventas */}
-      {showOpenCashReminder && cashResolved && !cashOpen && (
+      {showOpenCashReminder && (
         <Portal>
           <div
             className="fixed inset-0 flex items-center justify-center bg-black/80"
@@ -162,7 +205,7 @@ export default function Ventas() {
                 size="lg"
                 className="w-full"
                 onClick={() => {
-                  setShowOpenCashReminder(false)
+                  setDismissed(true)
                   navigate('/caja')
                 }}
               >
@@ -183,87 +226,151 @@ export default function Ventas() {
         </Button>
       </div>
 
-      {categories.length === 0 && outOfStock.length === 0 && (
-        <EmptyState title="No hay productos" description="Agrega un producto para empezar a vender." />
+      <LowStockAlert items={lowStock.data ?? []} />
+
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder="Ej: polo negro"
+        results={coincidencias.length}
+        total={(productsState.data ?? []).length}
+      />
+
+      {productsState.status === 'loading' && productsState.data === null && (
+        <div className="mt-4">
+          <LoadingState rows={3} label="Cargando productos..." />
+        </div>
       )}
 
-      {categories.map(({ category, items }) => (
-        <div key={category} className="mb-6">
-          <h2 className="mb-2 text-lg font-bold text-title">{category}</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {items.map(({ product, variant }) => (
-              <Card key={variant.id} className="flex flex-col">
-                <p className="font-bold">{product.name}</p>
-                <p className="text-sm text-fg-mute">
-                  {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
-                </p>
-                <p className="mt-1 text-lg font-bold text-ruby-text">S/ {product.price.toFixed(2)}</p>
-                <p className="text-xs text-fg-mute">{variant.quantity} disponibles</p>
-                <Button
-                  size="md"
-                  className="mt-2 w-full"
-                  onClick={() => addToCart({ product, variant })}
-                >
-                  Agregar
-                </Button>
-              </Card>
-            ))}
-          </div>
+      {productsState.status === 'error' && (
+        <div className="mt-4">
+          <ErrorState
+            title="No pudimos cargar los productos"
+            description="Revisa el celular e intenta de nuevo. Tus ventas no se perdieron."
+            onRetry={productsRetry}
+          />
         </div>
-      ))}
+      )}
 
-      {outOfStock.length > 0 && (
-        <div className="mb-6">
-          <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-danger">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-danger text-sm font-bold text-fg">!</span>
-            Agotado
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {outOfStock.map(({ product, variant }) => (
-              <Card key={variant.id} className="flex flex-col opacity-60">
-                <p className="font-bold">{product.name}</p>
-                <p className="text-sm text-fg-mute">
-                  {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
-                </p>
-                <p className="mt-1 text-lg font-bold text-fg-mute">S/ {product.price.toFixed(2)}</p>
-                <p className="text-xs text-danger">No disponible</p>
-                <Button
-                  size="md"
-                  className="mt-2 w-full"
-                  disabled
-                >
-                  Agregar
-                </Button>
-              </Card>
-            ))}
-          </div>
+      {cashFailed && (
+        <div className="mt-4">
+          <ErrorState
+            title="No pudimos revisar la caja"
+            description="No sabemos si hay caja abierta, así que no dejamos vender por ahora."
+            onRetry={cashRetry}
+          />
         </div>
+      )}
+
+      {productsState.status === 'ready' && (
+        <>
+          {!hayProductos && (
+            <div className="mt-4">
+              <EmptyState
+                icon="🛍️"
+                title="No hay productos"
+                description="Agrega tu primer producto para empezar a vender."
+                action={
+                  <Button size="md" onClick={() => setOpenNew(true)}>
+                    + Producto nuevo
+                  </Button>
+                }
+              />
+            </div>
+          )}
+
+          {hayProductos && coincidencias.length === 0 && (
+            <div className="mt-4">
+              <EmptyState
+                icon="🔍"
+                title={`No encontramos "${search.trim()}"`}
+                description="Intenta buscando con otra palabra, o revisa si el producto sigue activo en Inventario."
+                action={
+                  <Button variant="secondary" size="md" onClick={() => setSearch('')}>
+                    Borrar búsqueda
+                  </Button>
+                }
+              />
+            </div>
+          )}
+
+          {categories.map(({ category, items }) => (
+            <div key={category} className="mb-6 mt-4">
+              <h2 className="mb-2 text-lg font-bold text-title">{category}</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {items.map(({ product, variant }) => (
+                  <Card key={variant.id} className="flex flex-col">
+                    <p className="font-bold">{product.name}</p>
+                    <p className="text-sm text-fg-mute">
+                      {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-ruby-text">S/ {product.price.toFixed(2)}</p>
+                    <p className={`text-xs ${variant.quantity <= 5 ? 'font-bold text-warning' : 'text-fg-mute'}`}>
+                      {variant.quantity} disponibles
+                    </p>
+                    <Button
+                      size="md"
+                      className="mt-2 w-full"
+                      onClick={() => handleAdd({ product, variant })}
+                    >
+                      Agregar
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {outOfStock.length > 0 && (
+            <div className="mb-6 mt-4">
+              <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-danger">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-danger text-sm font-bold text-fg">!</span>
+                Agotado
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {outOfStock.map(({ product, variant }) => (
+                  <Card key={variant.id} className="flex flex-col opacity-60">
+                    <p className="font-bold">{product.name}</p>
+                    <p className="text-sm text-fg-mute">
+                      {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-fg-mute">S/ {product.price.toFixed(2)}</p>
+                    <p className="text-xs text-danger">No disponible</p>
+                    <Button size="md" className="mt-2 w-full" disabled>
+                      Agregar
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Floating Cart Button */}
       <button
         onClick={() => setOpenCart(true)}
         className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-[0_0_24px_rgba(0,245,255,0.55)] shadow-lg shadow-black/70 ring-1 ring-cta/40 transition-transform duration-150 ease-out will-change-transform active:scale-95"
-        aria-label="Abrir carrito"
+        aria-label={`Abrir carrito, ${unidades} ${unidades === 1 ? 'producto' : 'productos'}`}
       >
         🛒
-        {cartCount > 0 && (
+        {unidades > 0 && (
           <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-label-active text-xs font-bold text-white shadow-[0_0_10px_rgba(255,0,229,0.8)]">
-            {cartCount}
+            {unidades}
           </span>
         )}
       </button>
 
-      <NewProductModal open={openNew} onClose={() => setOpenNew(false)} onNeedCash={() => setShowOpenCashReminder(true)} />
+      <NewProductModal open={openNew} onClose={() => setOpenNew(false)} onNeedCash={() => setDismissed(false)} />
       <CartModal
         open={openCart}
         onClose={() => setOpenCart(false)}
         cart={cart}
-        total={cartTotal}
-        onUpdateQty={updateCartQty}
-        onRemove={removeFromCart}
-        onClear={() => setCart([])}
-        onNeedCash={() => setShowOpenCashReminder(true)}
+        total={total}
+        onUpdateQty={handleQty}
+        onRemove={handleRemove}
+        onClear={() => setCart(clearCart())}
+        onNeedCash={() => setDismissed(false)}
       />
 
 
@@ -294,11 +401,25 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
   const [quantity, setQuantity] = useState('1')
   const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
   const [amountPaid, setAmountPaid] = useState('')
+  // Máquina de estados del pago: evita el doble toque y muestra el botón en
+  // cada fase (Guardando / Listo / Intentar de nuevo).
+  const [payment, dispatch] = useReducer(paymentReducer, IDLE_PAYMENT)
+  const inFlightRef = useRef(false)
+  const requestIdRef = useRef<string | null>(null)
 
-  const total = drafts.reduce((sum, d) => sum + (Number(d.price) || 0) * (Number(d.quantity) || 0), 0)
-  const paid = Number(amountPaid) || 0
-  const change = paid > 0 ? paid - total : null
-  const insufficientPayment = paid > 0 && paid < total
+  const total = round2(drafts.reduce((sum, d) => sum + (Number(d.price) || 0) * (Number(d.quantity) || 0), 0))
+  const pago = validatePayment(total, amountPaid)
+  const paid = pago.ok ? pago.value : undefined
+  const change = computeChange(total, paid)
+
+  // Validación en tiempo real: el aviso aparece mientras se escribe, sin
+  // esperar a pulsar el botón. Campo vacío = todavía no se toca.
+  const nameCheck = validateName(name, 'el nombre del producto')
+  const priceCheck = validateAmount(price, 'el precio')
+  const quantityCheck = validateQuantity(quantity, { etiqueta: 'la cantidad', min: 1 })
+  const nameError = name !== '' && !nameCheck.ok ? nameCheck.error : null
+  const priceError = price !== '' && !priceCheck.ok ? priceCheck.error : null
+  const quantityError = quantity !== '' && !quantityCheck.ok ? quantityCheck.error : null
 
   function clearForm() {
     setName(''); setPrice(''); setSize(''); setColor(''); setCategory(''); setQuantity('1')
@@ -306,11 +427,11 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
   }
 
   function validateForm() {
-    if (!name.trim()) return show('Escribe el nombre del producto', 'error')
-    const p = Number(price)
-    if (!p || p <= 0) return show('Escribe un precio válido', 'error')
-    const n = Number(quantity)
-    if (!n || n <= 0) return show('Cantidad inválida', 'error')
+    const error = firstError(nameCheck, priceCheck, quantityCheck)
+    if (error) {
+      show(error, 'error')
+      return false
+    }
     return true
   }
 
@@ -350,7 +471,27 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
   }
 
   async function save() {
-    if (drafts.length === 0) return show('Agrega al menos un producto', 'error')
+    // Cláusulas de guarda: nada se envía si ya hay un envío en curso, si no hay
+    // líneas o si el formulario tiene errores. `inFlightRef` es síncrono, así
+    // que dos toques en el mismo instante no arrancan dos ventas.
+    if (inFlightRef.current || !canSubmit(payment)) return
+    if (drafts.length === 0) {
+      show('Agrega al menos un producto', 'error')
+      return
+    }
+    if (!validateForm()) return
+    if (!pago.ok) {
+      show(pago.error, 'error')
+      return
+    }
+
+    // La clave se genera una sola vez por intento: si se reintenta, se reutiliza.
+    requestIdRef.current ??= newId()
+    const clientRequestId = requestIdRef.current
+    const aviso = `${drafts.length} ${drafts.length === 1 ? 'producto agregado' : 'productos agregados'} y vendido(s)`
+
+    dispatch({ type: 'SUBMIT' })
+    inFlightRef.current = true
     try {
       await registerSale({
         lines: drafts.map((d) => ({
@@ -364,25 +505,43 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
           quantity: Number(d.quantity) || 0,
         })),
         paymentMethod: method,
-        amountPaid: paid || undefined,
+        amountPaid: paid,
+        clientRequestId,
       })
-      show(`${drafts.length} producto(s) agregado(s) y vendido(s)`)
+      requestIdRef.current = null
       setDrafts([])
       clearForm()
-      setMethod('efectivo'); setAmountPaid('')
-      onClose()
+      setMethod('efectivo')
+      setAmountPaid('')
+      dispatch({ type: 'DONE', message: aviso })
     } catch (e) {
-      if (e instanceof Error && e.message.includes('caja')) {
+      const message = e instanceof Error ? e.message : 'No se pudo guardar'
+      if (message.includes('caja')) {
+        requestIdRef.current = null
+        dispatch({ type: 'RESET' })
         onNeedCash()
-      } else {
-        show(e instanceof Error ? e.message : 'No se pudo guardar', 'error')
+        onClose()
+        return
       }
+      dispatch({ type: 'FAIL', message })
+      show(message, 'error')
+    } finally {
+      inFlightRef.current = false
     }
   }
 
+  function cerrar() {
+    dispatch({ type: 'RESET' })
+    requestIdRef.current = null
+    onClose()
+  }
+
+  const guardando = payment.status === 'processing'
+
   return (
-    <Modal open={open} title="Agregar productos y vender" onClose={onClose}>
-      <div className="flex max-h-[75vh] flex-col gap-3 overflow-y-auto">
+    <>
+      <Modal open={open} title="Agregar productos y vender" onClose={cerrar}>
+        <div className="flex max-h-[75vh] flex-col gap-3 overflow-y-auto">
         {drafts.length > 0 && (
           <div className="flex flex-col gap-2">
             {drafts.map((d) => (
@@ -442,10 +601,31 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
 
           {formOpen && (
             <div className="flex flex-col gap-2 p-3 pt-0">
-              <Input label="Nombre del producto" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Polo básico" />
+              <Input
+                label="Nombre del producto"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ej: Polo básico"
+                error={nameError ?? undefined}
+              />
               <div className="grid grid-cols-2 gap-2">
-                <Input label="Precio (S/)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
-                <Input label="Cantidad" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+                <Input
+                  label="Precio (S/)"
+                  type="text"
+                  inputMode="decimal"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="0.00"
+                  error={priceError ?? undefined}
+                />
+                <Input
+                  label="Cantidad"
+                  type="text"
+                  inputMode="numeric"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  error={quantityError ?? undefined}
+                />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="M" />
@@ -491,17 +671,17 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
             </div>
           </div>
 
-          <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
+          <Input
+            label="Con cuánto paga (S/)"
+            type="text"
+            inputMode="decimal"
+            value={amountPaid}
+            onChange={(e) => setAmountPaid(e.target.value)}
+            placeholder="Ej: 50.00"
+            error={!pago.ok ? pago.error : undefined}
+          />
 
-          {insufficientPayment && (
-            <div className="rounded-xl border border-danger/40 bg-danger/10 p-3">
-              <p className="text-center text-sm font-bold text-danger">
-                El monto es menor al total. Faltan S/ {(total - paid).toFixed(2)}
-              </p>
-            </div>
-          )}
-
-          {change !== null && change >= 0 && !insufficientPayment && (
+          {change !== null && (
             <div className="rounded-xl border border-success/40 bg-success/10 p-3">
               <div className="flex justify-between text-sm">
                 <span className="text-fg-soft">Vuelto</span>
@@ -510,12 +690,21 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
             </div>
           )}
 
-          <Button size="lg" onClick={save} disabled={drafts.length === 0 || insufficientPayment}>
-            Confirmar venta
+          <Button
+            size="lg"
+            onClick={save}
+            disabled={guardando || drafts.length === 0 || !pago.ok}
+          >
+            {submitLabel(payment, 'Confirmar venta')}
           </Button>
         </div>
       </div>
-    </Modal>
+      </Modal>
+
+      {payment.status === 'success' && (
+        <SuccessState message={payment.message ?? 'Listo'} onDone={cerrar} />
+      )}
+    </>
   )
 }
 
@@ -532,35 +721,66 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
   const { show } = useToast()
   const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
   const [amountPaid, setAmountPaid] = useState('')
+  // Máquina de estados del pago: bloquea el doble toque y da feedback inmediato.
+  const [payment, dispatch] = useReducer(paymentReducer, IDLE_PAYMENT)
+  const inFlightRef = useRef(false)
+  const requestIdRef = useRef<string | null>(null)
 
-  const paid = Number(amountPaid) || 0
-  const change = paid > 0 ? paid - total : null
-  const insufficientPayment = paid > 0 && paid < total
+  const pago = validatePayment(total, amountPaid)
+  const paid = pago.ok ? pago.value : undefined
+  const change = computeChange(total, paid)
+
+  // Cierra y limpia el intento. Al cerrar sin éxito se descarta la clave para
+  // que un carrito nuevo no reutilice la identidad de una venta anterior.
+  function cerrar() {
+    dispatch({ type: 'RESET' })
+    requestIdRef.current = null
+    onClose()
+  }
 
   async function confirmSale() {
-    if (cart.length === 0) return
+    // Guard clauses: sin carrito, con el pago mal o con una venta en vuelo, no
+    // se envía nada. El ref es síncrono, así que dos toques seguidos no duplican.
+    if (inFlightRef.current || !canSubmit(payment) || cart.length === 0 || !pago.ok) return
+
+    requestIdRef.current ??= newId()
+    const clientRequestId = requestIdRef.current
+
+    dispatch({ type: 'SUBMIT' })
+    inFlightRef.current = true
     try {
       await registerSale({
         lines: cart.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
         paymentMethod: method,
-        amountPaid: paid || undefined,
+        amountPaid: paid,
+        clientRequestId,
       })
-      show('Venta registrada')
+      requestIdRef.current = null
       onClear()
       setAmountPaid('')
       setMethod('efectivo')
-      onClose()
+      dispatch({ type: 'DONE', message: 'Venta registrada' })
     } catch (e) {
-      if (e instanceof Error && e.message.includes('caja')) {
+      const message = e instanceof Error ? e.message : 'No se pudo registrar'
+      if (message.includes('caja')) {
+        requestIdRef.current = null
+        dispatch({ type: 'RESET' })
         onNeedCash()
-      } else {
-        show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
+        cerrar()
+        return
       }
+      dispatch({ type: 'FAIL', message })
+      show(message, 'error')
+    } finally {
+      inFlightRef.current = false
     }
   }
 
+  const guardando = payment.status === 'processing'
+
   return (
-    <Modal open={open} title="Carrito" onClose={onClose}>
+    <>
+    <Modal open={open} title="Carrito" onClose={cerrar}>
       <div className="flex flex-col gap-3">
         {cart.length === 0 && <EmptyState title="Carrito vacío" description="Agrega productos al carrito." />}
         {cart.map((item) => (
@@ -614,17 +834,17 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
               </div>
             </div>
 
-            <Input label="Con cuánto paga (S/)" type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Ej: 50.00" />
+            <Input
+              label="Con cuánto paga (S/)"
+              type="text"
+              inputMode="decimal"
+              value={amountPaid}
+              onChange={(e) => setAmountPaid(e.target.value)}
+              placeholder="Ej: 50.00"
+              error={!pago.ok ? pago.error : undefined}
+            />
 
-            {insufficientPayment && (
-              <div className="rounded-xl border border-danger/40 bg-danger/10 p-3">
-                <p className="text-center text-sm font-bold text-danger">
-                  El monto es menor al total. Faltan S/ {(total - paid).toFixed(2)}
-                </p>
-              </div>
-            )}
-
-            {change !== null && change >= 0 && !insufficientPayment && (
+            {change !== null && (
               <div className="rounded-xl border border-success/40 bg-success/10 p-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-fg-soft">Vuelto</span>
@@ -633,12 +853,21 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
               </div>
             )}
 
-            <Button size="lg" onClick={confirmSale} disabled={insufficientPayment}>
-              Confirmar venta
+            <Button
+              size="lg"
+              onClick={confirmSale}
+              disabled={guardando || cart.length === 0 || !pago.ok}
+            >
+              {submitLabel(payment, 'Confirmar venta')}
             </Button>
           </>
         )}
       </div>
-    </Modal>
+      </Modal>
+
+      {payment.status === 'success' && (
+        <SuccessState message={payment.message ?? 'Venta registrada'} onDone={cerrar} />
+      )}
+    </>
   )
 }

@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
 import { Input } from '../components/ui/Input'
+import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
-import { useToast } from '../components/ui/Toast'
+import { useToast } from '../components/ui/ToastContext'
+import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
 import { voidSale } from '../services/sales'
 import { round2 } from '../utils/money'
@@ -65,11 +67,30 @@ function SalesHistory() {
   const [motivo, setMotivo] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const sales = useLiveQuery(() => db.sales.reverse().sortBy('createdAt'), [])
-  const items = useLiveQuery(() => db.saleItems.toArray(), [])
+  // Cada pestaña declara sus estados: cargando (esqueleto), error (con
+  // reintento) y vacío. Nunca se muestra "Sin ventas" mientras carga.
+  const [salesState, retrySales] = useQueryState(() => db.sales.reverse().sortBy('createdAt'), [])
+  const [itemsState] = useQueryState(() => db.saleItems.toArray(), [])
 
-  if (!sales || sales.length === 0) {
-    return <EmptyState title="Sin ventas" description="Las ventas registradas aparecerán aquí." />
+  const sales = salesState.data ?? []
+  const items = itemsState.data ?? []
+
+  if (salesState.status === 'loading' && salesState.data === null) {
+    return <LoadingState rows={4} label="Cargando ventas..." />
+  }
+
+  if (salesState.status === 'error') {
+    return (
+      <ErrorState
+        title="No pudimos cargar el historial"
+        description="Las ventas no están disponibles ahora mismo. Reintenta en unos segundos."
+        onRetry={retrySales}
+      />
+    )
+  }
+
+  if (sales.length === 0) {
+    return <EmptyState icon="🧾" title="Sin ventas" description="Las ventas registradas aparecerán aquí." />
   }
 
   const itemsBySale = new Map<string, SaleItem[]>()
@@ -191,10 +212,25 @@ function SalesHistory() {
 }
 
 function MovementsHistory() {
-  const movements = useLiveQuery(() => db.inventoryMovements.reverse().sortBy('createdAt'), [])
+  const [state, retry] = useQueryState(() => db.inventoryMovements.reverse().sortBy('createdAt'), [])
 
-  if (!movements || movements.length === 0) {
-    return <EmptyState title="Sin movimientos" description="Los movimientos de inventario aparecerán aquí." />
+  if (state.status === 'loading' && state.data === null) {
+    return <LoadingState rows={4} label="Cargando movimientos..." />
+  }
+
+  if (state.status === 'error') {
+    return (
+      <ErrorState
+        title="No pudimos cargar los movimientos"
+        description="El historial de inventario no está disponible ahora mismo."
+        onRetry={retry}
+      />
+    )
+  }
+
+  const movements = state.data ?? []
+  if (movements.length === 0) {
+    return <EmptyState icon="📦" title="Sin movimientos" description="Los movimientos de inventario aparecerán aquí." />
   }
 
   return (
@@ -221,10 +257,25 @@ function MovementsHistory() {
 }
 
 function ClosuresHistory() {
-  const closures = useLiveQuery(() => db.cashClosures.reverse().sortBy('createdAt'), [])
+  const [state, retry] = useQueryState(() => db.cashClosures.reverse().sortBy('createdAt'), [])
 
-  if (!closures || closures.length === 0) {
-    return <EmptyState title="Sin cierres" description="Los cierres de caja aparecerán aquí." />
+  if (state.status === 'loading' && state.data === null) {
+    return <LoadingState rows={4} label="Cargando cierres..." />
+  }
+
+  if (state.status === 'error') {
+    return (
+      <ErrorState
+        title="No pudimos cargar los cierres"
+        description="El historial de caja no está disponible ahora mismo."
+        onRetry={retry}
+      />
+    )
+  }
+
+  const closures = state.data ?? []
+  if (closures.length === 0) {
+    return <EmptyState icon="🗓️" title="Sin cierres" description="Los cierres de caja aparecerán aquí." />
   }
 
   return (

@@ -47,6 +47,12 @@ export async function registerSale(data: {
   lines: SaleLineInput[]
   paymentMethod: Sale['paymentMethod']
   amountPaid?: number
+  /**
+   * Clave única generada antes del primer envío. Hace que la operación sea
+   * idempotente: si el mismo intento llega dos veces, la segunda devuelve la
+   * venta ya registrada en lugar de cobrar y descontar stock otra vez.
+   */
+  clientRequestId?: string
 }): Promise<RegisterSaleResult> {
   if (data.lines.length === 0) throw new Error('La venta no tiene productos')
 
@@ -66,6 +72,20 @@ export async function registerSale(data: {
     db.productVariants,
     db.inventoryMovements,
     async () => {
+      // Guard clause de idempotencia. Se comprueba dentro de la transacción
+      // para que la lectura y la escritura sean atómicas: dos toques
+      // simultáneos no pueden pasar ambas comprobaciones y duplicar la venta.
+      if (data.clientRequestId) {
+        const repetida = await db.sales
+          .where('clientRequestId')
+          .equals(data.clientRequestId)
+          .first()
+        if (repetida) {
+          const itemsRepetida = await db.saleItems.where('saleId').equals(repetida.id).toArray()
+          return { sale: repetida, items: itemsRepetida }
+        }
+      }
+
       const resolved = await resolveLines(data.lines)
 
       const total = round2(resolved.reduce((sum, l) => sum + l.product.price * l.quantity, 0))

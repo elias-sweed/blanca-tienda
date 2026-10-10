@@ -6,7 +6,8 @@ type Size = 'md' | 'lg'
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   size?: Size
-  children: ReactNode
+  /** Opcional: un botón también puede ser solo un icono o una flecha. */
+  children?: ReactNode
 }
 
 /**

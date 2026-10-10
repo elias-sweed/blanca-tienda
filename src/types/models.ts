@@ -38,6 +38,12 @@ export interface Sale extends BaseEntity {
   anulada?: boolean
   anuladaAt?: string
   anuladaMotivo?: string
+  /**
+   * Identificador generado en la interfaz antes de enviar. Si la persona toca
+   * "Confirmar" dos veces o la conexión reintenta, se detecta la repetición y
+   * no se cobra ni se descuenta stock dos veces.
+   */
+  clientRequestId?: string
 }
 
 export interface SaleItem extends BaseEntity {

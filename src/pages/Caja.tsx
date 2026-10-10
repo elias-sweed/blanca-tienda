@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { AppLayout } from '../components/layout/AppLayout'
 import { AbrirCajaGuia } from '../components/layout/AbrirCajaGuia'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
 import { Input } from '../components/ui/Input'
+import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
-import { Spinner } from '../components/ui/Spinner'
-import { useToast } from '../components/ui/Toast'
+import { useToast } from '../components/ui/ToastContext'
+import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
 import { closeCashRegister, openCashRegister, type CierreResultado } from '../services/cash'
 import { round2 } from '../utils/money'
@@ -29,31 +30,32 @@ export default function Caja() {
   const [monto, setMonto] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // El resultado se envuelve en un objeto: `useLiveQuery` devuelve `undefined`
-  // tanto mientras carga como cuando la consulta resuelve `undefined`, y sin
-  // este envoltorio la página no puede diferenciar "cargando" de "no hay caja".
-  const openRegister = useLiveQuery(async () => {
+  // Estado explícito de la consulta: cargando / listo / error. Si falla la
+  // lectura se muestra un aviso con reintento en vez de girar para siempre.
+  const [cashState, cashRetry] = useQueryState(async () => {
     const regs = await db.cashRegisters.where('status').equals('abierta').toArray()
-    return { register: regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0] ?? null }
+    return regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0] ?? null
   }, [])
 
-  const register = openRegister?.register
+  const register = cashState.status === 'ready' ? cashState.data : null
 
   // Mientras la caja siga cerrada, la guía es obligatoria: se muestre cómo se
   // haya llegado aquí (desde Ventas, desde Inicio o del menú inferior).
-  const cashResolved = openRegister !== undefined
-  const mostrarGuia = cashResolved && !register
+  // Solo se muestra cuando la lectura tuvo éxito: si falló, no se sabe.
+  const mostrarGuia = cashState.status === 'ready' && register === null
 
-  // Aviso + sonido cuando se toca fuera del modal
-
-  const sales = useLiveQuery(
+  const [salesState, salesRetry] = useQueryState(
     async () => (register ? db.sales.where('registerId').equals(register.id).toArray() : []),
     [register?.id],
   )
 
-  const closures = useLiveQuery(() => db.cashClosures.reverse().sortBy('createdAt'), [])
+  const [closuresState, closuresRetry] = useQueryState(
+    () => db.cashClosures.reverse().sortBy('createdAt'),
+    [],
+  )
+  const closures = closuresState.data ?? []
 
-  const allSales = [...(sales ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const allSales = [...(salesState.data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   // Las ventas anuladas se muestran tachadas pero no suman al efectivo esperado.
   const ordered = allSales.filter((s) => !s.anulada)
   const porMetodo = METODOS.reduce<Record<string, number>>((acc, m) => {
@@ -99,8 +101,14 @@ export default function Caja() {
 
   return (
     <AppLayout title="Caja">
-      {openRegister === undefined ? (
-        <Spinner label="Cargando caja..." />
+      {cashState.status === 'error' ? (
+        <ErrorState
+          title="No pudimos leer la caja"
+          description="No se pudo revisar si hay caja abierta. Reintenta en unos segundos."
+          onRetry={cashRetry}
+        />
+      ) : cashState.status === 'loading' ? (
+        <LoadingState rows={2} label="Cargando caja..." />
       ) : !register ? (
         <>
           <div className="mb-4">
@@ -110,17 +118,27 @@ export default function Caja() {
           </div>
           <EmptyState title="Caja cerrada" description="Abre la caja para empezar a vender. Las ventas se anotan solas." />
 
-          {closures && closures.length > 0 && (
+          {closuresState.status === 'error' ? (
             <div className="mt-6">
-              <h2 className="mb-2 text-lg font-bold text-title">Cierres anteriores</h2>
-              <div className="flex flex-col gap-3">
-                {closures.map((c) => (
-                  <Card key={c.id}>
-                    <ClosureRow closure={c} />
-                  </Card>
-                ))}
-              </div>
+              <ErrorState
+                title="No pudimos cargar los cierres"
+                description="El historial de caja no está disponible ahora mismo."
+                onRetry={closuresRetry}
+              />
             </div>
+          ) : (
+            closures.length > 0 && (
+              <div className="mt-6">
+                <h2 className="mb-2 text-lg font-bold text-title">Cierres anteriores</h2>
+                <div className="flex flex-col gap-3">
+                  {closures.map((c) => (
+                    <Card key={c.id}>
+                      <ClosureRow closure={c} />
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )
           )}
         </>
       ) : (
@@ -163,7 +181,13 @@ export default function Caja() {
 
           <div className="mt-4">
             <h2 className="mb-2 text-lg font-bold text-title">Ventas de esta caja</h2>
-            {ordered.length === 0 ? (
+            {salesState.status === 'error' ? (
+              <ErrorState
+                title="No pudimos cargar las ventas"
+                description="Las ventas de esta caja no están disponibles ahora mismo."
+                onRetry={salesRetry}
+              />
+            ) : ordered.length === 0 ? (
               <EmptyState title="Sin ventas" description="Las ventas de esta caja aparecerán aquí." />
             ) : (
               <div className="flex flex-col gap-3">
@@ -232,7 +256,9 @@ export default function Caja() {
             <div className="flex flex-col gap-1">
               <Input
                 label={resultado === 'sobro' ? '¿Cuánto sobró? (S/)' : '¿Cuánto faltó? (S/)'}
-                type="number"
+                type="text"
+                inputMode="decimal"
+                enterKeyHint="done"
                 value={monto}
                 onChange={(e) => setMonto(e.target.value)}
                 placeholder="Ej: 10.00"

@@ -1,16 +1,21 @@
-import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
+import { useMemo, useState } from 'react'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
 import { Input } from '../components/ui/Input'
+import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
+import { SearchBox } from '../components/ui/SearchBox'
 import { StepperInput } from '../components/ui/StepperInput'
-import { useToast } from '../components/ui/Toast'
+import { useToast } from '../components/ui/ToastContext'
+import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
 import { addStock, addVariant, adjustStock, createProduct, type ProductVariantInput } from '../services/inventory'
 import type { Product, ProductVariant } from '../types/models'
+import { rankMatches } from '../utils/search'
+import { firstError, validateAmount, validateName, validateQuantity } from '../utils/validation'
 
 interface VariantDraft {
   key: string
@@ -36,7 +41,7 @@ export default function Inventario() {
   const [variantFor, setVariantFor] = useState<Product | null>(null)
   const [showInactive, setShowInactive] = useState(false)
 
-  const products = useLiveQuery(async () => {
+  const [productsState, retryProducts] = useQueryState(async () => {
     const all = await db.products.toArray()
     const variants = await db.productVariants.toArray()
     return all
@@ -48,14 +53,24 @@ export default function Inventario() {
       .sort((a, b) => a.product.name.localeCompare(b.product.name))
   }, [showInactive])
 
-  const term = search.trim().toLowerCase()
-  const filtered = (products ?? []).filter(({ product, variants }) =>
-    !term ||
-    product.name.toLowerCase().includes(term) ||
-    variants.some((v) => (v.color ?? '').toLowerCase().includes(term)),
+  // Se conservan los últimos datos aunque falle o esté recargando: la pantalla
+  // no se vacía y la persona sigue viendo lo último válido que se cargó.
+  const products = useMemo(() => productsState.data ?? [], [productsState.data])
+  const loading = productsState.status === 'loading' && productsState.data === null
+
+  // Búsqueda difusa: ignora acentos y mayúsculas, y busca también dentro de
+  // talla, color y categoría ("negro" encuentra el polo aunque solo esté en la variante).
+  const filtered = useMemo(
+    () =>
+      rankMatches(products, search, ({ product, variants }) => [
+        product.name,
+        product.category ?? '',
+        ...variants.map((v) => `${v.size ?? ''} ${v.color ?? ''}`),
+      ]),
+    [products, search],
   )
 
-  const inactiveCount = (products ?? []).filter((p) => !p.product.active || p.product.deleted).length
+  const inactiveCount = products.filter((p) => !p.product.active || p.product.deleted).length
 
   return (
     <AppLayout title="Inventario">
@@ -63,7 +78,13 @@ export default function Inventario() {
         + Agregar producto
       </Button>
 
-      <Input label="Buscar producto" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ej: polo negro" />
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder="Ej: polo negro"
+        results={filtered.length}
+        total={products.length}
+      />
 
       {inactiveCount > 0 && (
         <button
@@ -75,8 +96,41 @@ export default function Inventario() {
       )}
 
       <div className="mt-4 flex flex-col gap-3">
-        {filtered.length === 0 && (
-          <EmptyState title="No hay productos" description="Agrega tu primer producto para empezar." />
+        {/* Los 5 estados de la interfaz: cargando, error, vacío, sin resultados y contenido. */}
+        {loading && <LoadingState rows={4} label="Cargando inventario..." />}
+
+        {productsState.status === 'error' && (
+          <ErrorState
+            title="No pudimos cargar el inventario"
+            description="No se pudo leer la lista de productos. Reintenta en unos segundos."
+            onRetry={retryProducts}
+          />
+        )}
+
+        {!loading && productsState.status === 'ready' && products.length === 0 && (
+          <EmptyState
+            icon="📦"
+            title="No hay productos"
+            description="Agrega tu primer producto para empezar."
+            action={
+              <Button size="md" onClick={() => setOpenNew(true)}>
+                + Agregar producto
+              </Button>
+            }
+          />
+        )}
+
+        {!loading && productsState.status === 'ready' && products.length > 0 && filtered.length === 0 && (
+          <EmptyState
+            icon="🔍"
+            title={`No encontramos "${search.trim()}"`}
+            description="Revisa la ortografía o intenta con otra palabra."
+            action={
+              <Button variant="secondary" size="md" onClick={() => setSearch('')}>
+                Borrar búsqueda
+              </Button>
+            }
+          />
         )}
         {filtered.map(({ product, variants, quantity }) => {
           const inactivo = !product.active || product.deleted
@@ -179,20 +233,34 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
   const [price, setPrice] = useState('')
   const [category, setCategory] = useState('')
   const [drafts, setDrafts] = useState<VariantDraft[]>([newDraft()])
+  const [variantsOpen, setVariantsOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  // Validación pura, compartida con el resto de la app. Se evalúa en cada
+  // render para poder avisar mientras la persona escribe, no solo al guardar.
+  const nameCheck = validateName(name, 'el nombre')
+  const priceCheck = validateAmount(price, 'el precio')
+  const nameError = name !== '' && !nameCheck.ok ? nameCheck.error : null
+  const priceError = price !== '' && !priceCheck.ok ? priceCheck.error : null
+
   function reset() {
-    setName(''); setPrice(''); setCategory(''); setDrafts([newDraft()])
+    setName(''); setPrice(''); setCategory(''); setDrafts([newDraft()]); setVariantsOpen(false)
   }
 
   function updateDraft(key: string, patch: Partial<VariantDraft>) {
+    // Inmutable: se copia solo la fila tocada, el resto mantiene su referencia.
     setDrafts((ds) => ds.map((d) => (d.key === key ? { ...d, ...patch } : d)))
   }
 
   async function save() {
-    if (!name.trim()) return show('Escribe el nombre', 'error')
-    const p = Number(price)
-    if (!p || p <= 0) return show('Escribe un precio válido', 'error')
+    // Cláusulas de guarda: nada se escribe si el formulario está mal o si ya se
+    // está guardando (evita el doble toque).
+    if (busy) return
+    const error = firstError(nameCheck, priceCheck)
+    if (error) {
+      show(error, 'error')
+      return
+    }
 
     const variants: ProductVariantInput[] = drafts
       .filter((d) => d.size.trim() || d.color.trim() || Number(d.quantity) > 0)
@@ -202,7 +270,7 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
 
     setBusy(true)
     try {
-      await createProduct({ name, price: p, category, variants })
+      await createProduct({ name, price: priceCheck.ok ? priceCheck.value : 0, category, variants })
       onCreated()
       onClose()
       reset()
@@ -216,33 +284,64 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
   return (
     <Modal open={open} title="Agregar producto" onClose={onClose}>
       <div className="flex flex-col gap-3">
-        <Input label="Nombre del producto" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Polo básico" />
-
-        <StepperInput
-          label="Precio de Venta"
-          value={price}
-          onChange={setPrice}
-          onInvalid={() => show('Aquí solo van números, no se aceptan letras', 'error')}
-          prefix="S/"
-          step={1}
-          decimal
-          placeholder="0.00"
+        <Input
+          label="Nombre del producto"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Ej: Polo básico"
+          error={nameError ?? undefined}
         />
+
+        <div className="flex flex-col gap-1">
+          <StepperInput
+            label="Precio de Venta"
+            value={price}
+            onChange={setPrice}
+            onInvalid={() => show('Aquí solo van números, no se aceptan letras', 'error')}
+            prefix="S/"
+            step={1}
+            decimal
+            placeholder="0.00"
+          />
+          {priceError && <p className="text-sm font-semibold text-danger">{priceError}</p>}
+        </div>
 
         <Input label="Categoría (opcional)" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Polos" />
 
+        {/* Divulgación progresiva: lo esencial primero; tallas y colores se
+            abren solo cuando hacen falta. */}
         <div className="flex flex-col rounded-xl border border-line bg-inset">
-          <div className="flex items-center justify-between border-b border-line p-3">
-            <span className="font-bold text-fg">Tallas y colores</span>
-            <button
-              onClick={() => setDrafts((ds) => [...ds, newDraft()])}
-              className="text-sm font-bold text-accent-text transition-colors duration-150 hover:text-accent"
-            >
-              + Agregar
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setVariantsOpen((current) => !current)}
+            aria-expanded={variantsOpen}
+            className="flex items-center justify-between border-b border-line p-3 text-left"
+          >
+            <span className="font-bold text-fg">
+              Tallas y colores
+              {!variantsOpen && (
+                <span className="ml-2 text-xs font-semibold text-fg-mute">
+                  {drafts.length > 1 ? `${drafts.length} variantes` : 'opcional'}
+                </span>
+              )}
+            </span>
+            <span className="text-sm font-bold text-accent-text">
+              {variantsOpen ? 'Listo ▾' : 'Personalizar ▸'}
+            </span>
+          </button>
 
+          {variantsOpen && (
           <div className="flex flex-col gap-2 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-fg-soft">Filas de talla/color</span>
+              <button
+                onClick={() => setDrafts((ds) => [...ds, newDraft()])}
+                className="text-sm font-bold text-accent-text transition-colors duration-150 hover:text-accent"
+              >
+                + Agregar
+              </button>
+            </div>
+
             {drafts.map((d, i) => (
               <div key={d.key} className="flex flex-col gap-2">
                 {i > 0 && <div className="border-t border-line pt-2" />}
@@ -272,9 +371,12 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
             ))}
             <p className="text-xs text-fg-mute">Deja la talla y el color vacíos si el producto no los usa.</p>
           </div>
+          )}
         </div>
 
-        <Button size="lg" onClick={save} disabled={busy}>Guardar</Button>
+        <Button size="lg" onClick={save} disabled={busy}>
+          {busy ? 'Guardando...' : 'Guardar'}
+        </Button>
       </div>
     </Modal>
   )
@@ -291,12 +393,18 @@ function EntryModal({ variant, onClose, onDone }: {
   const [busy, setBusy] = useState(false)
 
   async function save() {
-    const n = Number(qty)
-    if (!Number.isFinite(n) || n <= 0) return show('Cantidad inválida', 'error')
+    // Guard clauses: nada se guarda si no hay variante seleccionada, si el
+    // formulario está mal o si ya se está guardando.
+    if (busy || !variant) return
+    const check = validateQuantity(qty, { etiqueta: 'la cantidad que ingresa', min: 1 })
+    if (!check.ok) {
+      show(check.error, 'error')
+      return
+    }
     setBusy(true)
     try {
-      if (variant) await addStock(variant.id, n, note.trim() || undefined)
-      onDone(n)
+      await addStock(variant.id, check.value, note.trim() || undefined)
+      onDone(check.value)
       setQty('1')
       setNote('')
     } catch (e) {
@@ -317,7 +425,14 @@ function EntryModal({ variant, onClose, onDone }: {
             </div>
           </div>
         )}
-        <Input label="Cantidad que ingresa" type="number" value={qty} onChange={(e) => setQty(e.target.value)} />
+        <Input
+          label="Cantidad que ingresa"
+          type="text"
+          inputMode="numeric"
+          enterKeyHint="done"
+          value={qty}
+          onChange={(e) => setQty(e.target.value)}
+        />
         <Input label="Nota (opcional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ej: Recepción del proveedor" />
         <Button size="lg" onClick={save} disabled={busy}>Agregar stock</Button>
       </div>
@@ -339,11 +454,19 @@ function AdjustModal({ variant, onClose, onDone }: {
   const diff = variant && Number.isFinite(n) && qty !== '' ? n - variant.quantity : null
 
   async function save() {
-    if (qty === '' || !Number.isFinite(n) || n < 0) return show('Escribe la cantidad real contada', 'error')
-    if (!note.trim()) return show('Escribe el motivo del ajuste', 'error')
+    if (busy || !variant) return
+    const check = validateQuantity(qty, { etiqueta: 'la cantidad real contada', min: 0 })
+    if (!check.ok) {
+      show(check.error, 'error')
+      return
+    }
+    if (!note.trim()) {
+      show('Escribe el motivo del ajuste', 'error')
+      return
+    }
     setBusy(true)
     try {
-      const result = variant ? await adjustStock(variant.id, n, note) : 0
+      const result = await adjustStock(variant.id, check.value, note)
       onDone(result)
       setQty('')
       setNote('')
@@ -368,7 +491,9 @@ function AdjustModal({ variant, onClose, onDone }: {
 
         <Input
           label="Cantidad real contada"
-          type="number"
+          type="text"
+          inputMode="numeric"
+          enterKeyHint="done"
           value={qty}
           onChange={(e) => setQty(e.target.value)}
           placeholder="Ej: 4"
@@ -417,12 +542,19 @@ function NewVariantModal({ product, onClose, onDone }: {
   const [busy, setBusy] = useState(false)
 
   async function save() {
-    if (!size.trim() && !color.trim()) return show('Escribe al menos la talla o el color', 'error')
-    const n = Number(qty)
-    if (!Number.isFinite(n) || n < 0) return show('Cantidad inválida', 'error')
+    if (busy || !product) return
+    if (!size.trim() && !color.trim()) {
+      show('Escribe al menos la talla o el color', 'error')
+      return
+    }
+    const check = validateQuantity(qty, { etiqueta: 'la cantidad', min: 0 })
+    if (!check.ok) {
+      show(check.error, 'error')
+      return
+    }
     setBusy(true)
     try {
-      if (product) await addVariant(product.id, { size, color, quantity: n })
+      await addVariant(product.id, { size, color, quantity: check.value })
       onDone()
       setSize(''); setColor(''); setQty('0')
     } catch (e) {
@@ -439,7 +571,14 @@ function NewVariantModal({ product, onClose, onDone }: {
           <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="L" />
           <Input label="Color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Azul" />
         </div>
-        <Input label="Cantidad inicial" type="number" value={qty} onChange={(e) => setQty(e.target.value)} />
+        <Input
+          label="Cantidad inicial"
+          type="text"
+          inputMode="numeric"
+          enterKeyHint="done"
+          value={qty}
+          onChange={(e) => setQty(e.target.value)}
+        />
         <Button size="lg" onClick={save} disabled={busy}>Agregar variante</Button>
       </div>
     </Modal>

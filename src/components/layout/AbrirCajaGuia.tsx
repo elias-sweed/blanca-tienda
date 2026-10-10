@@ -4,7 +4,7 @@ import { Button } from '../ui/Button'
 import { Portal } from '../ui/Portal'
 import { Z_OVERLAY } from '../ui/Modal'
 import { TrueFocus } from '../ui/TrueFocus'
-import { useToast } from '../ui/Toast'
+import { useToast } from '../ui/ToastContext'
 import beepSound from '../../assets/Sounds/Warning/Beep.mp3'
 
 /**

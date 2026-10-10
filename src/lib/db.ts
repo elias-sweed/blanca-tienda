@@ -45,4 +45,12 @@ db.version(3).stores({
   sales: 'id, date, paymentMethod, syncStatus, registerId, anulada',
 })
 
+// v4: índice en sales.clientRequestId. Es la clave de idempotencia: permite
+// detectar que la misma venta ya se registró en vez de duplicarla si el botón
+// "Confirmar" se toca dos veces o la operación se reintenta.
+// Migración aditiva: solo crea el índice, no toca los datos existentes.
+db.version(4).stores({
+  sales: 'id, date, paymentMethod, syncStatus, registerId, anulada, clientRequestId',
+})
+
 export { db }
