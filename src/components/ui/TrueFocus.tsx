@@ -33,7 +33,7 @@ export function TrueFocus({
   const containerRef = useRef<HTMLDivElement>(null)
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([])
   const [focusRect, setFocusRect] = useState({ x: 0, y: 0, width: 0, height: 0 })
-  const rafRef = useRef<number>()
+  const rafRef = useRef<number | null>(null)
 
   // Animación suave con intervalo
   useEffect(() => {
