@@ -9,10 +9,12 @@ export async function getOpenRegister(): Promise<CashRegister | undefined> {
   return registers.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0]
 }
 
-export async function openCashRegister(openingAmount: number): Promise<CashRegister> {
+/**
+ * Abre la caja del día. Siempre arranca en 0: lo que importa es saber cuánto
+ * se vendió hoy, sin mezclar el dinero que ya había de días anteriores.
+ */
+export async function openCashRegister(): Promise<CashRegister> {
   const now = nowISO()
-  const amount = round2(openingAmount)
-  if (!Number.isFinite(amount) || amount < 0) throw new Error('El monto inicial no es válido')
 
   const existing = await getOpenRegister()
   if (existing) throw new Error('Ya hay una caja abierta')
@@ -20,7 +22,7 @@ export async function openCashRegister(openingAmount: number): Promise<CashRegis
   const register: CashRegister = {
     id: newId(),
     date: todayISO(),
-    openingAmount: amount,
+    openingAmount: 0,
     openedAt: now,
     status: 'abierta',
     createdAt: now,
@@ -32,13 +34,24 @@ export async function openCashRegister(openingAmount: number): Promise<CashRegis
   return register
 }
 
+/** Cómo terminó el día en la gaveta, según lo responde quien vende. */
+export type CierreResultado = 'exacto' | 'sobro' | 'falto'
+
+export interface CloseCashRegisterData {
+  resultado: CierreResultado
+  /** Monto que sobró o faltó. Se ignora cuando el resultado es 'exacto'. */
+  monto?: number
+}
+
+/**
+ * Cierra la caja del día. No hace falta contar la gaveta: quien vende indica si
+ * quadró, sobró o faltó, y cuánto. Las ventas del día ya están sumadas, así que
+ * la diferencia solo refleja lo que la persona reporta.
+ */
 export async function closeCashRegister(
-  countedCash: number,
+  data: CloseCashRegisterData,
 ): Promise<CashClosure> {
   const now = nowISO()
-  const counted = round2(countedCash)
-  if (!Number.isFinite(counted) || counted < 0) throw new Error('El monto contado no es válido')
-
   const register = await getOpenRegister()
   if (!register) throw new Error('No hay una caja abierta')
 
@@ -51,8 +64,17 @@ export async function closeCashRegister(
   const totalTarjeta = summary.porMetodo.tarjeta
   const totalOtro = summary.porMetodo.otro
 
-  const expectedCash = round2(register.openingAmount + totalCash)
-  const difference = round2(counted - expectedCash)
+  // La caja abre en 0, así que lo esperado es exactamente el efectivo vendido.
+  const expectedCash = totalCash
+
+  let monto = 0
+  if (data.resultado !== 'exacto') {
+    const value = round2(Number(data.monto))
+    if (!Number.isFinite(value) || value <= 0) throw new Error('Escribe un monto válido')
+    monto = value
+  }
+
+  const difference = data.resultado === 'sobro' ? monto : data.resultado === 'falto' ? -monto : 0
 
   const closure: CashClosure = {
     id: newId(),
@@ -64,7 +86,7 @@ export async function closeCashRegister(
     totalTarjeta,
     totalOtro,
     expectedCash,
-    countedCash: counted,
+    countedCash: round2(expectedCash + difference),
     difference,
     createdAt: now,
     updatedAt: now,

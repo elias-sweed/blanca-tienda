@@ -138,7 +138,7 @@ export default function Ventas() {
               <div>
                 <p className="text-xl font-bold text-fg">Antes de vender, abre la caja</p>
                 <p className="mt-2 text-sm text-fg-mute">
-                  La caja es donde se guarda el dinero del día. Ábrela con el monto que tienes en la gaveta para poder registrar tus ventas.
+                  La caja guarda las ventas del día. Ábrela para empezar a vender. Tus ventas se anotan solas, no tienes que escribir nada.
                 </p>
               </div>
               <Button
@@ -149,7 +149,7 @@ export default function Ventas() {
                     localStorage.setItem('ventas-saltar-aviso-caja', '1')
                   }
                   setShowOpenCashReminder(false)
-                  navigate('/caja')
+                  navigate('/caja', { state: { fromVentas: true } })
                 }}
               >
                 Abrir caja

@@ -19,7 +19,7 @@ export default function Inicio() {
     if (!register) return undefined
     const sales = (await db.sales.where('registerId').equals(register.id).toArray()).filter((s) => !s.anulada)
     const efectivo = round2(sales.filter((s) => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0))
-    return { sales: sales.length, efectivo, expected: round2(register.openingAmount + efectivo) }
+    return { sales: sales.length, efectivo, esperado: efectivo }
   }, [register?.id])
 
   const stats = useLiveQuery(async () => {
@@ -60,13 +60,13 @@ export default function Inicio() {
           </div>
           {register ? (
             <>
-              <p className="mt-1 text-2xl font-bold text-fg">S/ {(cash?.expected ?? 0).toFixed(2)}</p>
+              <p className="mt-1 text-2xl font-bold text-fg">S/ {(cash?.esperado ?? 0).toFixed(2)}</p>
               <p className="text-sm text-fg-mute">
-                Efectivo esperado · {cash?.sales ?? 0} {cash?.sales === 1 ? 'venta' : 'ventas'}
+                Efectivo del día · {cash?.sales ?? 0} {cash?.sales === 1 ? 'venta' : 'ventas'}
               </p>
             </>
           ) : (
-            <p className="mt-1 text-sm text-fg-soft">Abre la caja para poder registrar ventas</p>
+            <p className="mt-1 text-sm text-fg-soft">Abre la caja para empezar a vender hoy</p>
           )}
         </div>
       </Link>

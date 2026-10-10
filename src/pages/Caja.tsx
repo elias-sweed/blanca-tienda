@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useLocation } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
+import { AbrirCajaGuia } from '../components/layout/AbrirCajaGuia'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -9,7 +11,7 @@ import { Modal } from '../components/ui/Modal'
 import { Spinner } from '../components/ui/Spinner'
 import { useToast } from '../components/ui/Toast'
 import { db } from '../lib/db'
-import { closeCashRegister, openCashRegister } from '../services/cash'
+import { closeCashRegister, openCashRegister, type CierreResultado } from '../services/cash'
 import { round2 } from '../utils/money'
 import type { CashClosure, Sale } from '../types/models'
 
@@ -23,10 +25,12 @@ const METODOS: { id: Sale['paymentMethod']; label: string }[] = [
 
 export default function Caja() {
   const { show } = useToast()
-  const [openModal, setOpenModal] = useState(false)
+  const location = useLocation()
+  const fromVentas = (location.state as { fromVentas?: boolean } | null)?.fromVentas ?? false
+  const [showArrow, setShowArrow] = useState(false)
   const [closeModal, setCloseModal] = useState(false)
-  const [opening, setOpening] = useState('')
-  const [counted, setCounted] = useState('')
+  const [resultado, setResultado] = useState<CierreResultado | null>(null)
+  const [monto, setMonto] = useState('')
   const [busy, setBusy] = useState(false)
 
   // El resultado se envuelve en un objeto: `useLiveQuery` devuelve `undefined`
@@ -38,6 +42,15 @@ export default function Caja() {
   }, [])
 
   const register = openRegister?.register
+
+  // Si venimos de Ventas, mantener el botón resaltado permanentemente
+  useEffect(() => {
+    if (fromVentas && !register) {
+      setShowArrow(true)
+    }
+  }, [fromVentas, register])
+
+  // Aviso + sonido cuando se toca fuera del modal
 
   const sales = useLiveQuery(
     async () => (register ? db.sales.where('registerId').equals(register.id).toArray() : []),
@@ -54,21 +67,14 @@ export default function Caja() {
     return acc
   }, {})
   const totalVendido = round2(ordered.reduce((sum, s) => sum + s.total, 0))
-  const expectedCash = round2((register?.openingAmount ?? 0) + porMetodo.efectivo)
-  const countedNum = Number(counted)
-  const difference = Number.isFinite(countedNum) && counted !== '' ? round2(countedNum - expectedCash) : null
+  // La caja abre en 0: lo esperado es solo el efectivo vendido hoy.
+  const esperadoEnGaveta = porMetodo.efectivo
 
   async function handleOpen() {
-    const amount = Number(opening)
-    if (opening === '' || !Number.isFinite(amount) || amount < 0) {
-      return show('Escribe un monto inicial válido', 'error')
-    }
     setBusy(true)
     try {
-      await openCashRegister(amount)
-      show(`Caja abierta con S/ ${amount.toFixed(2)}`)
-      setOpenModal(false)
-      setOpening('')
+      await openCashRegister()
+      show('Caja abierta. Ya puedes vender.')
     } catch (e) {
       show(e instanceof Error ? e.message : 'No se pudo abrir la caja', 'error')
     } finally {
@@ -77,20 +83,19 @@ export default function Caja() {
   }
 
   async function handleClose() {
-    if (counted === '' || !Number.isFinite(countedNum) || countedNum < 0) {
-      return show('Escribe el monto contado', 'error')
-    }
+    if (!resultado) return show('Elige cómo te fue con la caja', 'error')
     setBusy(true)
     try {
-      const closure = await closeCashRegister(countedNum)
+      const closure = await closeCashRegister({ resultado, monto: Number(monto) || undefined })
       const msg = closure.difference === 0
-        ? 'Caja cerrada. El efectivo cuadró exacto.'
+        ? 'Caja cerrada. Todo cuadró.'
         : closure.difference > 0
           ? `Caja cerrada. Sobraron S/ ${closure.difference.toFixed(2)}`
           : `Caja cerrada. Faltaron S/ ${Math.abs(closure.difference).toFixed(2)}`
-      show(msg, closure.difference === 0 ? 'success' : 'error')
+      show(msg, closure.difference === 0 ? 'success' : 'info')
       setCloseModal(false)
-      setCounted('')
+      setResultado(null)
+      setMonto('')
     } catch (e) {
       show(e instanceof Error ? e.message : 'No se pudo cerrar la caja', 'error')
     } finally {
@@ -104,10 +109,12 @@ export default function Caja() {
         <Spinner label="Cargando caja..." />
       ) : !register ? (
         <>
-          <Button size="lg" className="mb-4" onClick={() => setOpenModal(true)}>
-            Abrir caja
-          </Button>
-          <EmptyState title="Caja cerrada" description="Abre la caja para empezar a registrar el día." />
+          <div className="mb-4">
+            <Button size="lg" className="w-full" onClick={handleOpen} disabled={busy}>
+              Abrir caja
+            </Button>
+          </div>
+          <EmptyState title="Caja cerrada" description="Abre la caja para empezar a vender. Las ventas se anotan solas." />
 
           {closures && closures.length > 0 && (
             <div className="mt-6">
@@ -129,21 +136,22 @@ export default function Caja() {
             <p className="mt-1 text-sm text-fg-mute">
               Desde {new Date(register.openedAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
             </p>
-            <div className="mt-3 flex justify-between text-lg font-bold">
-              <span className="text-fg-soft">Efectivo esperado</span>
-              <span className="text-cta-text">S/ {expectedCash.toFixed(2)}</span>
+            <div className="mb-3 flex justify-between text-lg font-bold">
+              <span className="text-fg-soft">Ganado hoy</span>
+              <span className="text-ruby-text">S/ {totalVendido.toFixed(2)}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Card>
-              <p className="text-sm text-fg-mute">Vendido hoy</p>
+              <p className="text-sm text-fg-mute">Ganado hoy</p>
               <p className="text-2xl font-bold text-ruby-text">S/ {totalVendido.toFixed(2)}</p>
               <p className="text-xs text-fg-mute">{ordered.length} ventas</p>
             </Card>
             <Card>
-              <p className="text-sm text-fg-mute">Monto inicial</p>
-              <p className="text-2xl font-bold text-accent-text">S/ {register.openingAmount.toFixed(2)}</p>
+              <p className="text-sm text-fg-mute">Efectivo del día</p>
+              <p className="text-2xl font-bold text-accent-text">S/ {esperadoEnGaveta.toFixed(2)}</p>
+              <p className="text-xs text-fg-mute">Solo efectivo</p>
             </Card>
           </div>
 
@@ -196,71 +204,80 @@ export default function Caja() {
         </>
       )}
 
-      <Modal open={openModal} title="Abrir caja" onClose={() => setOpenModal(false)}>
-        <div className="flex flex-col gap-3">
-          <Input
-            label="Monto inicial (S/)"
-            type="number"
-            value={opening}
-            onChange={(e) => setOpening(e.target.value)}
-            placeholder="Ej: 50.00"
-          />
-          <Button size="lg" onClick={handleOpen} disabled={busy}>
-            Abrir caja
-          </Button>
-        </div>
-      </Modal>
-
       <Modal open={closeModal} title="Cerrar caja" onClose={() => setCloseModal(false)}>
         <div className="flex flex-col gap-3">
-          <div className="rounded-xl border border-line bg-inset p-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-fg-soft">Efectivo esperado</span>
-              <span className="font-bold text-cta-text">S/ {expectedCash.toFixed(2)}</span>
-            </div>
-            <div className="mt-1 flex justify-between text-sm">
-              <span className="text-fg-soft">Ventas en la caja</span>
-              <span className="font-bold text-ruby-text">S/ {totalVendido.toFixed(2)}</span>
-            </div>
+          <p className="text-center text-sm text-fg-mute">
+            No necesitas contar nada. Solo dime cómo te fue con la gaveta.
+          </p>
+
+          <div className="flex flex-col gap-2">
+            {([
+              { id: 'exacto', label: 'Quadró exacto', emoji: '✅' },
+              { id: 'sobro', label: 'Sobró dinero', emoji: '💰' },
+              { id: 'falto', label: 'Faltó dinero', emoji: '❌' },
+            ] as const).map((op) => (
+              <button
+                key={op.id}
+                onClick={() => {
+                  setResultado(op.id)
+                  if (op.id === 'exacto') setMonto('')
+                }}
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition active:scale-[0.98] ${
+                  resultado === op.id
+                    ? 'border-accent-text bg-accent text-fg'
+                    : 'border-line bg-inset text-fg-soft'
+                }`}
+              >
+                <span className="text-xl">{op.emoji}</span>
+                <span className="font-bold">{op.label}</span>
+              </button>
+            ))}
           </div>
 
-          <Input
-            label="Efectivo contado (S/)"
-            type="number"
-            value={counted}
-            onChange={(e) => setCounted(e.target.value)}
-            placeholder="Ej: 50.00"
-          />
+          {resultado !== null && resultado !== 'exacto' && (
+            <div className="flex flex-col gap-1">
+              <Input
+                label={resultado === 'sobro' ? '¿Cuánto sobró? (S/)' : '¿Cuánto faltó? (S/)'}
+                type="number"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                placeholder="Ej: 10.00"
+              />
+              <p className="text-xs text-fg-mute">Solo si quieres anotarlo. No es obligatorio.</p>
+            </div>
+          )}
 
-          {difference !== null && (
-            <div
-              className={`rounded-xl border p-3 ${
-                difference === 0
-                  ? 'border-cta-text/40 bg-cta/15'
-                  : difference > 0
-                    ? 'border-info/40 bg-info/10'
-                    : 'border-danger/40 bg-danger/10'
-              }`}
-            >
+          {resultado !== null && resultado !== 'exacto' && monto !== '' && (
+            <div className="rounded-xl border border-line bg-inset p-3">
               <div className="flex justify-between text-sm">
-                <span className="text-fg-soft">Diferencia</span>
-                <span className={`font-bold ${difference === 0 ? 'text-cta-text' : difference > 0 ? 'text-info' : 'text-danger'}`}>
-                  {difference > 0 ? '+' : ''}S/ {difference.toFixed(2)}
-                </span>
+                <span className="text-fg-soft">Ganado hoy</span>
+                <span className="font-bold text-ruby-text">S/ {totalVendido.toFixed(2)}</span>
               </div>
-              {difference !== 0 && (
-                <p className="mt-1 text-center text-xs text-fg-mute">
-                  {difference > 0 ? 'Sobró efectivo en gaveta' : 'Faltó efectivo en gaveta'}
-                </p>
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-fg-soft">Efectivo del día</span>
+                <span className="font-bold text-accent-text">S/ {esperadoEnGaveta.toFixed(2)}</span>
+              </div>
+              {Number(monto) > 0 && (
+                <div className="mt-1 flex justify-between text-sm">
+                  <span className="text-fg-soft">{resultado === 'sobro' ? 'Sobró' : 'Faltó'}</span>
+                  <span className={`font-bold ${resultado === 'sobro' ? 'text-info' : 'text-danger'}`}>
+                    S/ {Number(monto).toFixed(2)}
+                  </span>
+                </div>
               )}
             </div>
           )}
 
-          <Button size="lg" onClick={handleClose} disabled={busy}>
-            Confirmar cierre
+          <Button size="lg" onClick={handleClose} disabled={busy || resultado === null}>
+            Cerrar caja
           </Button>
         </div>
       </Modal>
+
+      {/* Al venir desde Ventas, un modal guía al centro: solo responde "Abrir caja" */}
+      {showArrow && !register && (
+        <AbrirCajaGuia onAbrir={handleOpen} />
+      )}
     </AppLayout>
   )
 }
@@ -278,12 +295,14 @@ function ClosureRow({ closure }: { closure: CashClosure }) {
       <div>
         <p className="font-bold">{closure.date}</p>
         <p className="text-sm text-fg-mute">
-          Esperado S/ {closure.expectedCash.toFixed(2)} · Contado S/ {closure.countedCash.toFixed(2)}
+          Ganado S/ {closure.totalCash.toFixed(2)}
         </p>
       </div>
       <div className="text-right">
         <p className={`font-bold ${estado.clase}`}>{estado.texto}</p>
-        <p className="text-xs text-fg-mute">Ventas S/ {closure.totalCash.toFixed(2)}</p>
+        <p className="text-xs text-fg-mute">
+          Efectivo S/ {(closure.totalCash + closure.totalYape + closure.totalPlin + closure.totalTarjeta + closure.totalOtro).toFixed(2)}
+        </p>
       </div>
     </div>
   )
