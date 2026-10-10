@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useNavigate } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -10,6 +11,7 @@ import { useToast } from '../components/ui/Toast'
 import { db } from '../lib/db'
 import { registerSale } from '../services/sales'
 import { newId } from '../utils/ids'
+import beepSound from '../assets/Sounds/Warning/Beep.mp3'
 
 const PAYMENTS = [
   { id: 'efectivo', label: 'Efectivo' },
@@ -29,9 +31,40 @@ interface CartItem {
 
 export default function Ventas() {
   const { show } = useToast()
+  const navigate = useNavigate()
   const [cart, setCart] = useState<CartItem[]>([])
   const [openCart, setOpenCart] = useState(false)
   const [openNew, setOpenNew] = useState(false)
+  const [showOpenCashReminder, setShowOpenCashReminder] = useState(false)
+  const [dontShowAgain, setDontShowAgain] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Consulta si hay una caja abierta
+  const openRegister = useLiveQuery(async () => {
+    const regs = await db.cashRegisters.where('status').equals('abierta').toArray()
+    return { register: regs.sort((a, b) => a.openedAt.localeCompare(b.openedAt))[0] ?? null }
+  }, [])
+
+  const cashOpen = openRegister?.register != null
+
+  // Al entrar a Ventas: si no hay caja abierta, mostrar el modal de aviso con sonido
+  useEffect(() => {
+    if (cashOpen) {
+      setShowOpenCashReminder(false)
+      return
+    }
+    const skip = localStorage.getItem('ventas-saltar-aviso-caja')
+    if (skip === '1') return
+    setShowOpenCashReminder(true)
+    // Reproducir sonido de advertencia
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(beepSound)
+      }
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(() => {})
+    } catch {}
+  }, [cashOpen])
 
   const products = useLiveQuery(async () => {
     const all = await db.products.filter((p) => p.active && !p.deleted).toArray()
@@ -96,6 +129,45 @@ export default function Ventas() {
 
   return (
     <AppLayout title="Ventas">
+      {/* Modal de aviso de caja cerrada al entrar a Ventas */}
+      {showOpenCashReminder && !cashOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-3xl border border-line-strong bg-raised p-6 shadow-2xl shadow-black/80">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-danger/15 text-3xl">💰</span>
+              <div>
+                <p className="text-xl font-bold text-fg">Antes de vender, abre la caja</p>
+                <p className="mt-2 text-sm text-fg-mute">
+                  La caja es donde se guarda el dinero del día. Ábrela con el monto que tienes en la gaveta para poder registrar tus ventas.
+                </p>
+              </div>
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={() => {
+                  if (dontShowAgain) {
+                    localStorage.setItem('ventas-saltar-aviso-caja', '1')
+                  }
+                  setShowOpenCashReminder(false)
+                  navigate('/caja')
+                }}
+              >
+                Abrir caja
+              </Button>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-mute">
+                <input
+                  type="checkbox"
+                  checked={dontShowAgain}
+                  onChange={(e) => setDontShowAgain(e.target.checked)}
+                  className="h-4 w-4 accent-ruby"
+                />
+                No mostrar de nuevo
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-4">
         <Button size="lg" className="w-full" onClick={() => setOpenNew(true)}>
           + Producto nuevo
@@ -173,7 +245,7 @@ export default function Ventas() {
         )}
       </button>
 
-      <NewProductModal open={openNew} onClose={() => setOpenNew(false)} />
+      <NewProductModal open={openNew} onClose={() => setOpenNew(false)} onNeedCash={() => setShowOpenCashReminder(true)} />
       <CartModal
         open={openCart}
         onClose={() => setOpenCart(false)}
@@ -182,7 +254,10 @@ export default function Ventas() {
         onUpdateQty={updateCartQty}
         onRemove={removeFromCart}
         onClear={() => setCart([])}
+        onNeedCash={() => setShowOpenCashReminder(true)}
       />
+
+
     </AppLayout>
   )
 }
@@ -197,7 +272,7 @@ interface DraftProduct {
   quantity: string
 }
 
-function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose: () => void; onNeedCash: () => void }) {
   const { show } = useToast()
   const [drafts, setDrafts] = useState<DraftProduct[]>([])
   const [editingKey, setEditingKey] = useState<string | null>(null)
@@ -288,7 +363,11 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
       setMethod('efectivo'); setAmountPaid('')
       onClose()
     } catch (e) {
-      show(e instanceof Error ? e.message : 'No se pudo guardar', 'error')
+      if (e instanceof Error && e.message.includes('caja')) {
+        onNeedCash()
+      } else {
+        show(e instanceof Error ? e.message : 'No se pudo guardar', 'error')
+      }
     }
   }
 
@@ -431,7 +510,7 @@ function NewProductModal({ open, onClose }: { open: boolean; onClose: () => void
   )
 }
 
-function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear }: {
+function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear, onNeedCash }: {
   open: boolean
   onClose: () => void
   cart: CartItem[]
@@ -439,6 +518,7 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
   onUpdateQty: (variantId: string, qty: number) => void
   onRemove: (variantId: string) => void
   onClear: () => void
+  onNeedCash: () => void
 }) {
   const { show } = useToast()
   const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
@@ -462,7 +542,11 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear 
       setMethod('efectivo')
       onClose()
     } catch (e) {
-      show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
+      if (e instanceof Error && e.message.includes('caja')) {
+        onNeedCash()
+      } else {
+        show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
+      }
     }
   }
 
