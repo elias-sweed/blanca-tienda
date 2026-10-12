@@ -12,7 +12,7 @@ import { Modal } from '../components/ui/Modal'
 import { useToast } from '../components/ui/ToastContext'
 import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
-import { closeCashRegister, openCashRegister, type CierreResultado } from '../services/cash'
+import { closeCashRegister, getGastosGaveta, openCashRegister, type CierreResultado } from '../services/cash'
 import { round2 } from '../utils/money'
 import type { CashClosure, Sale } from '../types/models'
 
@@ -58,6 +58,15 @@ export default function Caja() {
   )
   const closures = closuresState.data ?? []
 
+  // Compras al por mayor pagadas de la gaveta en la fecha de la caja abierta.
+  // Se leen de las compras (ahí vive el gasto una sola vez) y se restan.
+  const [gastosState] = useQueryState(
+    async () => (register ? getGastosGaveta(register.date) : { compras: [], total: 0 }),
+    [register?.id],
+  )
+  const gastos = gastosState.data?.compras ?? []
+  const totalGastos = gastosState.data?.total ?? 0
+
   const allSales = [...(salesState.data ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   // Las ventas anuladas se muestran tachadas pero no suman al efectivo esperado.
   const ordered = allSales.filter((s) => !s.anulada)
@@ -66,8 +75,9 @@ export default function Caja() {
     return acc
   }, {})
   const totalVendido = round2(ordered.reduce((sum, s) => sum + s.total, 0))
-  // La caja abre en 0: lo esperado es solo el efectivo vendido hoy.
-  const esperadoEnGaveta = porMetodo.efectivo
+  // La caja abre en 0: lo esperado es el efectivo vendido menos lo que se
+  // pagó de la gaveta en compras al por mayor (con su porqué más abajo).
+  const esperadoEnGaveta = round2(porMetodo.efectivo - totalGastos)
 
   function validarMonto(valor: string): string | null {
     if (valor === '') return null
@@ -171,6 +181,26 @@ export default function Caja() {
               <span className="text-fg-soft">Ganado hoy</span>
               <span className="text-fg">S/ {totalVendido.toFixed(2)}</span>
             </div>
+            {totalGastos > 0 && (
+              <>
+                <div className="flex justify-between text-sm font-bold">
+                  <span className="text-fg-soft">Pagaste de la gaveta</span>
+                  <span className="text-danger">−S/ {totalGastos.toFixed(2)}</span>
+                </div>
+                {gastos.map((g) => (
+                  <div key={g.id} className="flex justify-between gap-2 text-xs">
+                    <span className="truncate text-fg-mute">
+                      {g.nombre} · {g.mayorista}
+                    </span>
+                    <span className="shrink-0 text-fg-mute">S/ {g.costoTotal.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="mt-1 flex justify-between border-t border-line pt-2 text-lg font-bold">
+                  <span className="text-fg-soft">Te queda en la gaveta</span>
+                  <span className="text-title">S/ {esperadoEnGaveta.toFixed(2)}</span>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -182,7 +212,9 @@ export default function Caja() {
             <Card>
               <p className="text-sm text-fg-mute">Efectivo del día</p>
               <p className="mt-1 text-2xl font-bold text-fg">S/ {esperadoEnGaveta.toFixed(2)}</p>
-              <p className="text-xs text-fg-mute">Solo efectivo</p>
+              <p className="text-xs text-fg-mute">
+                {totalGastos > 0 ? 'Ventas menos compras de la gaveta' : 'Solo efectivo'}
+              </p>
             </Card>
           </div>
 
@@ -301,10 +333,20 @@ export default function Caja() {
             <div className="rounded-xl border border-line bg-inset p-3">
               <div className="flex justify-between text-sm">
                 <span className="text-fg-soft">Ganado hoy</span>
-                <span className="font-bold text-title">S/ {totalVendido.toFixed(2)}</span>
+                <span className="font-bold text-fg">S/ {totalVendido.toFixed(2)}</span>
               </div>
               <div className="mt-1 flex justify-between text-sm">
-                <span className="text-fg-soft">Efectivo del día</span>
+                <span className="text-fg-soft">Efectivo vendido</span>
+                <span className="font-bold text-fg">S/ {porMetodo.efectivo.toFixed(2)}</span>
+              </div>
+              {totalGastos > 0 && (
+                <div className="mt-1 flex justify-between text-sm">
+                  <span className="text-fg-soft">Menos compras de la gaveta</span>
+                  <span className="font-bold text-danger">−S/ {totalGastos.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-fg-soft">Te queda en la gaveta</span>
                 <span className="font-bold text-title">S/ {esperadoEnGaveta.toFixed(2)}</span>
               </div>
               {Number(monto) > 0 && (

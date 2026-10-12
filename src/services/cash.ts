@@ -1,7 +1,7 @@
 import { db } from '../lib/db'
 import { newId, nowISO, todayISO } from '../utils/ids'
 import { round2 } from '../utils/money'
-import type { CashRegister, CashClosure, Sale } from '../types/models'
+import type { CashRegister, CashClosure, Compra, Sale } from '../types/models'
 
 export async function getOpenRegister(): Promise<CashRegister | undefined> {
   const registers = await db.cashRegisters.where('status').equals('abierta').toArray()
@@ -64,7 +64,8 @@ export async function closeCashRegister(
   const totalTarjeta = summary.porMetodo.tarjeta
   const totalOtro = summary.porMetodo.otro
 
-  // La caja abre en 0, así que lo esperado es exactamente el efectivo vendido.
+  // La caja abre en 0: lo esperado es el efectivo vendido menos lo que se
+  // pagó de la gaveta en compras al por mayor (ya viene restado en el resumen).
   const expectedCash = totalCash
 
   let monto = 0
@@ -123,8 +124,26 @@ export interface RegisterSummary {
   porMetodo: Record<Sale['paymentMethod'], number>
   /** Suma de todas las ventas del registro. */
   totalVendido: number
-  /** Efectivo esperado en gaveta: monto inicial + ventas en efectivo. */
+  /** Compras al por mayor pagadas de la gaveta en la fecha de la caja. */
+  comprasGaveta: Compra[]
+  /** Total pagado de la gaveta en compras al por mayor. */
+  gastosGaveta: number
+  /** Efectivo esperado en gaveta: monto inicial + ventas en efectivo − compras de la gaveta. */
   expectedCash: number
+}
+
+/**
+ * Compras al por mayor ya confirmadas y pagadas de la gaveta en una fecha
+ * (AAAA-MM-DD). Se lee de las compras: el gasto vive ahí una sola vez,
+ * la caja solo lo descuenta, nunca lo duplica.
+ */
+export async function getGastosGaveta(fecha: string): Promise<{ compras: Compra[]; total: number }> {
+  const compras = await db.compras
+    .filter((c) => c.estado === 'registrada' && c.pago === 'gaveta' && c.fecha === fecha)
+    .toArray()
+  compras.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  const total = round2(compras.reduce((sum, c) => sum + c.costoTotal, 0))
+  return { compras, total }
 }
 
 /**
@@ -153,13 +172,19 @@ export async function getRegisterSummary(registerId: string): Promise<RegisterSu
 
   const activas = sales.filter((s) => !s.anulada)
 
+  // Lo que salió de la gaveta para pagar compras al por mayor también cuenta:
+  // si no se resta, al cerrar siempre "faltaría" esa plata sin explicación.
+  const { compras: comprasGaveta, total: gastosGaveta } = await getGastosGaveta(register.date)
+
   return {
     register,
     sales,
     salesCount: activas.length,
     porMetodo,
     totalVendido,
-    expectedCash: round2(register.openingAmount + porMetodo.efectivo),
+    comprasGaveta,
+    gastosGaveta,
+    expectedCash: round2(register.openingAmount + porMetodo.efectivo - gastosGaveta),
   }
 }
 

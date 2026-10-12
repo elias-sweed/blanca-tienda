@@ -7,6 +7,7 @@ import { LowStockAlert } from '../components/ui/LowStockAlert'
 import { useLowStock } from '../hooks/useLowStock'
 import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
+import { getGastosGaveta } from '../services/cash'
 import { todayISO } from '../utils/ids'
 import { round2 } from '../utils/money'
 
@@ -28,7 +29,9 @@ export default function Inicio() {
     const efectivo = round2(
       sales.filter((s) => s.paymentMethod === 'efectivo').reduce((sum, s) => sum + s.total, 0),
     )
-    return { sales: sales.length, efectivo, esperado: efectivo }
+    // Igual que en Caja: se resta lo pagado de la gaveta en compras al por mayor.
+    const { total: gastos } = await getGastosGaveta(register.date)
+    return { sales: sales.length, efectivo, esperado: round2(efectivo - gastos) }
   }, [register?.id])
   const cash = cashDetail.status === 'ready' ? cashDetail.data : null
 

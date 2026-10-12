@@ -16,8 +16,9 @@ import { useToast } from '../components/ui/ToastContext'
 import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
 import { addVariant, adjustStock, createProduct, updateProduct, type ProductVariantInput } from '../services/inventory'
-import type { Product, ProductVariant } from '../types/models'
+import type { InventoryMovement, Product, ProductVariant } from '../types/models'
 import { calcularPaginas, paginar } from '../utils/paginacion'
+import { formatearFechaCorta } from '../utils/compra'
 import { rankMatches } from '../utils/search'
 import { firstError, validateAmount, validateName, validateQuantity } from '../utils/validation'
 
@@ -54,6 +55,7 @@ export default function Inventario() {
   const [variantFor, setVariantFor] = useState<Product | null>(null)
   const [editFor, setEditFor] = useState<Product | null>(null)
   const [showInactive, setShowInactive] = useState(false)
+  const [openMovimientos, setOpenMovimientos] = useState(false)
 
   const [productsState, retryProducts] = useQueryState(async () => {
     const all = await db.products.toArray()
@@ -138,6 +140,13 @@ export default function Inventario() {
           {showInactive ? 'Ocultar' : 'Mostrar'} productos dados de baja ({inactiveCount})
         </button>
       )}
+
+      <button
+        onClick={() => setOpenMovimientos(true)}
+        className="mt-3 self-start text-xs font-bold text-cta-text transition-colors duration-150 hover:text-cta-hover"
+      >
+        Ver mis agregados y compras →
+      </button>
 
       <div className="mt-4 flex flex-col gap-3">
         {/* Los 5 estados de la interfaz: cargando, error, vacío, sin resultados y contenido. */}
@@ -278,6 +287,8 @@ export default function Inventario() {
           setEditFor(null)
         }}
       />
+
+      <MovimientosModal open={openMovimientos} onClose={() => setOpenMovimientos(false)} />
     </AppLayout>
   )
 }
@@ -652,6 +663,92 @@ function EditProductModal({ product, onClose, onDone }: {
         <Button size="lg" onClick={save} disabled={busy}>
           {busy ? 'Guardando...' : 'Guardar cambios'}
         </Button>
+      </div>
+    </Modal>
+  )
+}
+
+type FiltroMovimiento = 'todos' | 'agregados' | 'compras' | 'ajustes'
+
+/** Etiqueta simple y grupo para filtrar cada movimiento. */
+function etiquetaMovimiento(m: InventoryMovement): { texto: string; grupo: FiltroMovimiento | 'otros' } {
+  if (m.reason === 'ajuste') return { texto: 'Ajuste', grupo: 'ajustes' }
+  if (m.reason === 'venta') return { texto: 'Venta', grupo: 'otros' }
+  if (m.reason === 'anulacion') return { texto: 'Anulación', grupo: 'otros' }
+  if (m.reason === 'entrada') {
+    if ((m.note ?? '').startsWith('Compra al por mayor')) {
+      return { texto: 'Compra al por mayor', grupo: 'compras' }
+    }
+    return { texto: 'Agregaste', grupo: 'agregados' }
+  }
+  return { texto: 'Movimiento', grupo: 'otros' }
+}
+
+/** Lo último que entró o cambió en el inventario, con su porqué. */
+function MovimientosModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [filtro, setFiltro] = useState<FiltroMovimiento>('todos')
+  const [state, retry] = useQueryState(() => db.inventoryMovements.reverse().sortBy('createdAt'), [])
+
+  const movimientos = useMemo(() => (state.data ?? []).slice(0, 30), [state.data])
+  const filtrados =
+    filtro === 'todos' ? movimientos : movimientos.filter((m) => etiquetaMovimiento(m).grupo === filtro)
+
+  return (
+    <Modal open={open} title="Mis agregados y compras" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <FilterChips<FiltroMovimiento>
+          titulo="Ver"
+          valor={filtro}
+          onChange={setFiltro}
+          opciones={[
+            { valor: 'todos', etiqueta: 'Todo' },
+            { valor: 'agregados', etiqueta: 'Agregados' },
+            { valor: 'compras', etiqueta: 'Compras' },
+            { valor: 'ajustes', etiqueta: 'Ajustes' },
+          ]}
+        />
+
+        {state.status === 'loading' && state.data === null && (
+          <LoadingState rows={3} label="Cargando movimientos..." />
+        )}
+
+        {state.status === 'error' && (
+          <ErrorState
+            title="No pudimos cargar los movimientos"
+            description="Inténtalo de nuevo en unos segundos."
+            onRetry={retry}
+          />
+        )}
+
+        {state.status !== 'loading' && state.status !== 'error' && filtrados.length === 0 && (
+          <EmptyState
+            icon="📦"
+            title={movimientos.length === 0 ? 'Sin movimientos todavía' : 'Nada con ese filtro'}
+            description={
+              movimientos.length === 0
+                ? 'Aquí verás lo que agregues, ajustes o compres.'
+                : 'Prueba con otro filtro.'
+            }
+          />
+        )}
+
+        {filtrados.map((m) => {
+          const etiqueta = etiquetaMovimiento(m)
+          return (
+            <div key={m.id} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-inset p-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-fg">{m.productName || 'Producto'}</p>
+                <p className="text-xs text-fg-mute">
+                  {etiqueta.texto} · {formatearFechaCorta(m.createdAt.slice(0, 10))}
+                </p>
+                {m.note && <p className="truncate text-xs text-fg-mute">{m.note}</p>}
+              </div>
+              <span className={`shrink-0 text-sm font-bold ${m.quantity >= 0 ? 'text-success' : 'text-danger'}`}>
+                {m.quantity > 0 ? '+' : ''}{m.quantity}
+              </span>
+            </div>
+          )
+        })}
       </div>
     </Modal>
   )
