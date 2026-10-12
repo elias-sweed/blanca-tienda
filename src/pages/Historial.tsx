@@ -299,7 +299,7 @@ function SalesHistory({ filtro }: { filtro: FiltroHistorialProps }) {
                 <Button variant="secondary" size="md" className="flex-1" onClick={() => setAnular(s)}>
                   Anular venta
                 </Button>
-                <HelpTooltip text="Si te equivocaste, puedes anular la venta y el stock vuelve al inventario." />
+                <HelpTooltip text="Si te equivocaste, puedes anular la venta y las unidades vuelven al inventario." />
               </div>
             )}
           </Card>

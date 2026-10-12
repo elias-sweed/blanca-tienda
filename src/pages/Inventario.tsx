@@ -15,7 +15,7 @@ import { StepperInput } from '../components/ui/StepperInput'
 import { useToast } from '../components/ui/ToastContext'
 import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
-import { addStock, addVariant, adjustStock, createProduct, updateProduct, type ProductVariantInput } from '../services/inventory'
+import { addVariant, adjustStock, createProduct, updateProduct, type ProductVariantInput } from '../services/inventory'
 import type { Product, ProductVariant } from '../types/models'
 import { calcularPaginas, paginar } from '../utils/paginacion'
 import { rankMatches } from '../utils/search'
@@ -50,7 +50,6 @@ export default function Inventario() {
   const [orden, setOrden] = useState<OrdenInventario>('az')
   const [pagina, setPagina] = useState(1)
   const [openNew, setOpenNew] = useState(false)
-  const [entryFor, setEntryFor] = useState<ProductVariant | null>(null)
   const [adjustFor, setAdjustFor] = useState<ProductVariant | null>(null)
   const [variantFor, setVariantFor] = useState<Product | null>(null)
   const [editFor, setEditFor] = useState<Product | null>(null)
@@ -203,9 +202,9 @@ export default function Inventario() {
                 ) : (
                   <span className="flex items-center gap-0.5">
                     {bajo ? (
-                      <span className="text-danger">Poco stock</span>
+                      <span className="text-danger">Quedan pocas</span>
                     ) : (
-                      <span className="text-fg-mute">Mín. {product.stockMin}</span>
+                      <span className="text-fg-mute">Al menos {product.stockMin}</span>
                     )}
                     <HelpTooltip text="Es la cantidad mínima que quieres tener. Si llegas a quedarte con menos, te avisamos en Inicio y en Ventas." />
                   </span>
@@ -223,13 +222,10 @@ export default function Inventario() {
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
-                        <Button variant="secondary" size="md" onClick={() => setEntryFor(v)}>
-                          + Stock
-                        </Button>
-                        <Button variant="ghost" size="md" onClick={() => setAdjustFor(v)}>
+                        <Button variant="secondary" size="md" onClick={() => setAdjustFor(v)}>
                           Ajustar
                         </Button>
-                        <HelpTooltip text="Úsalo si contaste los productos y la cantidad difiere de lo que dice la app." />
+                        <HelpTooltip text="Úsalo cuando cuentes y te dé un número distinto al de la app." />
                       </div>
                     </div>
                   ))}
@@ -255,20 +251,11 @@ export default function Inventario() {
 
       <NewProductModal open={openNew} onClose={() => setOpenNew(false)} onCreated={() => show('Producto agregado')} />
 
-      <EntryModal
-        variant={entryFor}
-        onClose={() => setEntryFor(null)}
-        onDone={(n) => {
-          show(`Se agregaron ${n} ${n === 1 ? 'unidad' : 'unidades'}`)
-          setEntryFor(null)
-        }}
-      />
-
       <AdjustModal
         variant={adjustFor}
         onClose={() => setAdjustFor(null)}
-        onDone={(diff) => {
-          show(diff > 0 ? `Stock ajustado +${diff}` : `Stock ajustado ${diff}`)
+        onDone={(n) => {
+          show(`Ahora hay ${n} ${n === 1 ? 'unidad' : 'unidades'}`)
           setAdjustFor(null)
         }}
       />
@@ -450,68 +437,10 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
   )
 }
 
-function EntryModal({ variant, onClose, onDone }: {
-  variant: ProductVariant | null
-  onClose: () => void
-  onDone: (n: number) => void
-}) {
-  const { show } = useToast()
-  const [qty, setQty] = useState('1')
-  const [note, setNote] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  async function save() {
-    // Guard clauses: nada se guarda si no hay variante seleccionada, si el
-    // formulario está mal o si ya se está guardando.
-    if (busy || !variant) return
-    const check = validateQuantity(qty, { etiqueta: 'la cantidad que ingresa', min: 1 })
-    if (!check.ok) {
-      show(check.error, 'error')
-      return
-    }
-    setBusy(true)
-    try {
-      await addStock(variant.id, check.value, note.trim() || undefined)
-      onDone(check.value)
-      setQty('1')
-      setNote('')
-    } catch (e) {
-      show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Modal open={!!variant} title={`Agregar stock: ${variant ? describeVariant(variant) : ''}`} onClose={onClose}>
-      <div className="flex flex-col gap-3">
-        {variant && (
-          <div className="rounded-xl border border-line bg-inset p-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-fg-soft">Stock actual</span>
-              <span className="font-bold text-ruby-text">{variant.quantity}</span>
-            </div>
-          </div>
-        )}
-        <Input
-          label="Cantidad que ingresa"
-          type="text"
-          inputMode="numeric"
-          enterKeyHint="done"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-        />
-        <Input label="Nota (opcional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ej: Recepción del proveedor" />
-        <Button size="lg" onClick={save} disabled={busy}>Agregar stock</Button>
-      </div>
-    </Modal>
-  )
-}
-
 function AdjustModal({ variant, onClose, onDone }: {
   variant: ProductVariant | null
   onClose: () => void
-  onDone: (diff: number) => void
+  onDone: (cantidad: number) => void
 }) {
   const { show } = useToast()
   const [qty, setQty] = useState('')
@@ -523,42 +452,42 @@ function AdjustModal({ variant, onClose, onDone }: {
 
   async function save() {
     if (busy || !variant) return
-    const check = validateQuantity(qty, { etiqueta: 'la cantidad real contada', min: 0 })
+    const check = validateQuantity(qty, { etiqueta: 'cuántas hay ahora', min: 0 })
     if (!check.ok) {
       show(check.error, 'error')
       return
     }
     if (!note.trim()) {
-      show('Escribe el motivo del ajuste', 'error')
+      show('Escribe por qué cambia la cantidad', 'error')
       return
     }
     setBusy(true)
     try {
-      const result = await adjustStock(variant.id, check.value, note)
-      onDone(result)
+      await adjustStock(variant.id, check.value, note)
+      onDone(check.value)
       setQty('')
       setNote('')
     } catch (e) {
-      show(e instanceof Error ? e.message : 'No se pudo ajustar', 'error')
+      show(e instanceof Error ? e.message : 'No se pudo guardar', 'error')
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <Modal open={!!variant} title={`Ajustar stock: ${variant ? describeVariant(variant) : ''}`} onClose={onClose}>
+    <Modal open={!!variant} title={`Ajustar cantidad: ${variant ? describeVariant(variant) : ''}`} onClose={onClose}>
       <div className="flex flex-col gap-3">
         {variant && (
           <div className="rounded-xl border border-line bg-inset p-3">
             <div className="flex justify-between text-sm">
-              <span className="text-fg-soft">Stock registrado</span>
+              <span className="text-fg-soft">Lo que dice la app</span>
               <span className="font-bold text-ruby-text">{variant.quantity}</span>
             </div>
           </div>
         )}
 
         <Input
-          label="Cantidad real contada"
+          label="Cuántas hay ahora"
           type="text"
           inputMode="numeric"
           enterKeyHint="done"
@@ -580,7 +509,7 @@ function AdjustModal({ variant, onClose, onDone }: {
               </span>
             </div>
             <p className="mt-1 text-center text-xs text-fg-mute">
-              {diff > 0 ? 'Había menos de lo registrado' : 'Había más de lo registrado'}
+              {diff > 0 ? 'Contaste más de lo que decía la app' : 'Contaste menos de lo que decía la app'}
             </p>
           </div>
         )}
@@ -589,10 +518,10 @@ function AdjustModal({ variant, onClose, onDone }: {
           label="Motivo (obligatorio)"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Ej: Conteggio físico, mercadería dañada"
+          placeholder="Ej: Lo conté otra vez"
         />
 
-        <Button variant="secondary" size="lg" onClick={save} disabled={busy}>Guardar ajuste</Button>
+        <Button variant="secondary" size="lg" onClick={save} disabled={busy}>Guardar</Button>
       </div>
     </Modal>
   )

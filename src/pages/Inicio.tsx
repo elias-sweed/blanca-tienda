@@ -131,7 +131,7 @@ export default function Inicio() {
             <p className="text-2xl font-bold text-accent-text">{stats?.sold ?? 0}</p>
           </Card>
           <Card>
-            <p className="text-sm text-fg-mute">Productos con poco stock</p>
+            <p className="text-sm text-fg-mute">Productos con pocas unidades</p>
             <p
               className={`text-2xl font-bold ${
                 (lowStock.data ?? []).length > 0 ? 'text-danger' : 'text-cta-text'
