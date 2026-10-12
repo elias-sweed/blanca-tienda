@@ -24,10 +24,10 @@ export function Input({ label, error, help, className = '', id, ...props }: Prop
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${inputId}-error` : undefined}
-        className={`w-full rounded-xl border bg-inset px-4 py-3 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition-colors duration-150 focus:outline-none ${
+        className={`w-full rounded-xl border bg-inset px-4 py-3 text-base font-semibold text-fg placeholder:text-fg-mute transition-colors duration-150 focus:outline-none ${
           error
             ? 'border-danger focus:border-danger focus:ring-2 focus:ring-danger/40'
-            : 'border-line focus:border-accent-text focus:ring-2 focus:ring-accent/40'
+            : 'border-line focus:border-line-active focus:ring-2 focus:ring-line-active/30'
         } ${className}`}
         {...props}
       />

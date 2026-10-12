@@ -1,105 +1,118 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Paleta "Cyber Neon" — violeta profundo con neones
-   Fondo #05050A · Títulos #FFFFFF · Botón cian #00F5FF
-   Secundario violeta #8B00FF · Precios magenta #FF2BD6
+   Premium Graphite & Soft Teal
+   Oscuro: grafito mate + verde azulado moderado.
+   Claro ("Light Premium & Soft Teal"): redefine los MISMOS tokens
+   bajo `html[data-tema="claro"]`, así ningún componente cambia:
+   todo lee estas variables. Verificado con WCAG AA (script de contraste).
    ============================================================ */
 @theme {
   /* ---- Fondos ---- */
-  --color-bg: #05050a;
-  --color-chrome: #090610;
-  --color-inset: #0d0a18;
-  --color-surface: #100d1c;
-  --color-raised: #191329;
-  --color-selected: #251440;
-  --color-hover: #351454;
+  --color-bg: #101216;
+  --color-chrome: #14171c;
+  --color-inset: #191d23;
+  --color-surface: #191d23;
+  --color-raised: #222832;
+  --color-selected: #293a3e;
+  --color-hover: #303941;
 
   /* ---- Bordes ---- */
-  --color-line: #30213f;
-  --color-line-strong: #46305e;
-  --color-line-active: #00f5ff;
+  --color-line: #343b45;
+  --color-line-strong: #46515e;
+  --color-line-active: #65c8b8;
 
-  /* ---- Texto ---- */
-  --color-title: #ffffff;
-  --color-title-accent: #00f5ff;
-  --color-fg: #f1f0ff;
-  --color-fg-soft: #b7b7cc;
-  --color-fg-mute: #9292ad;
+  /* ---- Textos ---- */
+  --color-title: #f0f2f5;
+  --color-fg: #e1e5eb;
+  --color-fg-soft: #b3bbc6;
+  --color-fg-mute: #8993a1;
 
-  /* ---- Acentos ---- */
-  --color-cta: #00f5ff;
-  --color-cta-hover: #66f8ff;
-  --color-cta-dark: #00c9d4;
-  --color-cta-text: #00f5ff;
-  /* Superficie del botón: cian profundo para sostener la etiqueta blanca.
-     El cian puro #00F5FF queda como identidad (borde, glow, anillo). */
-  --color-cta-surface: #00909f;
-  --color-cta-surface-hi: #00b4c2;
-  --color-cta-surface-lo: #00707d;
+  /* ---- Acento principal: verde azulado moderado ---- */
+  --color-cta: #65c8b8;
+  --color-cta-hover: #80d7c9;
+  --color-cta-dark: #3b9f93;
+  --color-cta-text: #65c8b8;
+  /* Superficie del botón primario: igual en ambos temas (blanco encima). */
+  --color-cta-surface: #286d68;
+  --color-cta-surface-hi: #337f78;
+  --color-cta-surface-lo: #205a56;
 
-  --color-accent: #8b00ff;
-  --color-accent-hover: #a733ff;
-  --color-accent-soft: #3d0070;
-  --color-accent-text: #00d9ff;
+  /* ---- Acento secundario: lavanda ---- */
+  --color-accent: #a99ae8;
+  --color-accent-hover: #b9adf0;
+  --color-accent-soft: #373247;
+  --color-accent-text: #c2b6f2;
 
-  --color-label-active: #ff00e5;
+  /* ---- Acento secundario: rosa ---- */
+  --color-label-active: #e3a2c8;
+  --color-ruby: #382733;
+  --color-ruby-hover: #46303d;
+  --color-ruby-soft: #382733;
+  --color-ruby-text: #e3a2c8;
 
-  --color-ruby: #7a0a5c;
-  --color-ruby-hover: #9c0d76;
-  --color-ruby-soft: #4a0536;
-  --color-ruby-text: #ff2bd6;
+  /* ---- Estados semánticos ---- */
+  --color-success: #65b98a;
+  --color-danger: #e4777d;
+  --color-warning: #d8b36a;
+  --color-info: #83aee8;
 
-  /* ---- Estados ---- */
-  --color-success: #39ff14;
-  --color-danger: #ff1744;
-  --color-warning: #ffff00;
-  --color-info: #2864ff;
+  /* Texto sobre rellenos sólidos semánticos: tinta en oscuro, blanco en claro. */
+  --color-on-fill: #101216;
 
-  --color-glow-cyan: #00f5ff;
-  --color-glow-violet: #8b00ff;
+  /* ---- Tipografía ---- */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* ---- Animaciones: solo transform y opacity (compositor) ---- */
-  --animate-float-a: float-a 22s ease-in-out infinite;
-  --animate-float-b: float-b 28s ease-in-out infinite;
-  --animate-scanline: scanline 9s linear infinite;
   --animate-pulse-soft: pulse-soft 1.8s ease-in-out infinite;
   --animate-ayuda-latido: ayuda-latido 2.4s ease-in-out infinite;
-
-  /* Sin-serif del sistema: se lee bien en pantallas chicas, no descarga
-     nada de internet y funciona igual con la app sin conexión. */
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Sólo transform: ninguna de estas animaciones toca layout ni paint. */
-@keyframes float-a {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(0, -26px, 0) scale(1.08);
-  }
-}
+/* Tema claro real (no inversión): mismos nombres, valores claros.
+   `html[...]` supera en especificidad al `:root` del tema. */
+html[data-tema="claro"] {
+  --color-bg: #f4f5f7;
+  --color-chrome: #eef0f3;
+  --color-inset: #ebeef2;
+  --color-surface: #ffffff;
+  --color-raised: #e9ecf0;
+  --color-selected: #ddebe8;
+  --color-hover: #e5e9ed;
 
-@keyframes float-b {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(0, 22px, 0) scale(1.12);
-  }
-}
+  --color-line: #d5dae1;
+  --color-line-strong: #b8c1cc;
+  --color-line-active: #247d73;
 
-/* La línea de escaneo se mueve con transform, no con top. */
-@keyframes scanline {
-  0% {
-    transform: translate3d(0, -100%, 0);
-  }
-  100% {
-    transform: translate3d(0, 100vh, 0);
-  }
+  --color-title: #20252d;
+  --color-fg: #303743;
+  --color-fg-soft: #535d6b;
+  --color-fg-mute: #616b78;
+
+  --color-cta: #247d73;
+  --color-cta-hover: #1d6c63;
+  --color-cta-dark: #185a53;
+  --color-cta-text: #247d73;
+  --color-cta-surface: #286d68;
+  --color-cta-surface-hi: #337f78;
+  --color-cta-surface-lo: #205a56;
+
+  --color-accent: #7562b5;
+  --color-accent-hover: #65519f;
+  --color-accent-soft: #eeeaf8;
+  --color-accent-text: #65519f;
+
+  --color-label-active: #8f3f71;
+  --color-ruby: #f7eaf2;
+  --color-ruby-hover: #efd9e6;
+  --color-ruby-soft: #f7eaf2;
+  --color-ruby-text: #8f3f71;
+
+  --color-success: #267b50;
+  --color-danger: #b93a46;
+  --color-warning: #93630c;
+  --color-info: #316bb4;
+
+  --color-on-fill: #ffffff;
 }
 
 @keyframes pulse-soft {
@@ -113,7 +126,7 @@
 }
 
 /* Latido del botón de ayuda "?": solo opacidad (ni layout ni paint).
-   Cíclo lento de 2.4 s para que llame la atención sin distraer y sin
+   Ciclo lento de 2.4 s para que llame la atención sin distraer y sin
    coste notable en un teléfono antiguo. */
 @keyframes ayuda-latido {
   0%,
@@ -144,13 +157,13 @@
 }
 
 html {
-  background-color: #05050a;
+  background-color: var(--color-bg);
 }
 
 body {
   margin: 0;
-  background-color: #05050a;
-  color: #f1f0ff;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
@@ -158,8 +171,7 @@ body {
   overscroll-behavior-y: none;
 }
 
-/* Títulos en blanco. El halo neón se resuelve con capas animadas por
-   opacidad en FondoNeon, no con text-shadow (repinta el texto cada frame). */
+/* Títulos con presencia tipográfica, sin halos ni sombras de texto. */
 h1,
 h2 {
   letter-spacing: -0.01em;
@@ -172,12 +184,13 @@ h2 {
 }
 
 ::selection {
-  background: #00f5ff;
-  color: #05050a;
+  background: var(--color-line-active);
+  color: var(--color-bg);
 }
 
+/* Placeholder visible en pantallas de calidad limitada (sin opacidad). */
 ::placeholder {
-  color: rgba(138, 138, 138, 0.65);
+  color: var(--color-fg-mute);
 }
 
 /* Scroll discreto acorde al tema */
@@ -186,12 +199,12 @@ h2 {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #05050a;
+  background: var(--color-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #30213f;
+  background: var(--color-line);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a3266;
+  background: var(--color-line-strong);
 }

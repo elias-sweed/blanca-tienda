@@ -162,8 +162,8 @@ export default function Caja() {
         </>
       ) : (
         <>
-          <div className="mb-4 rounded-2xl border border-line-active/60 bg-selected p-4 shadow-[0_0_24px_rgba(0,245,255,0.2)]">
-            <p className="text-xs font-bold uppercase tracking-wider text-title-accent">Caja abierta</p>
+          <div className="mb-4 rounded-2xl border border-line-active/60 bg-selected p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-cta-text">Caja abierta</p>
             <p className="mt-1 text-sm text-fg-mute">
               Desde {new Date(register.openedAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
             </p>
@@ -192,7 +192,7 @@ export default function Caja() {
               {METODOS.map((m) => (
                 <div key={m.id} className="flex items-center justify-between rounded-xl border border-line bg-inset px-4 py-3">
                   <span className="text-sm font-semibold text-fg-soft">{m.label}</span>
-                  <span className="font-bold text-ruby-text">S/ {(porMetodo[m.id] ?? 0).toFixed(2)}</span>
+                  <span className="font-bold text-fg">S/ {(porMetodo[m.id] ?? 0).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -214,7 +214,7 @@ export default function Caja() {
                   <Card key={s.id} className={s.anulada ? 'opacity-60' : ''}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className={`font-bold ${s.anulada ? 'text-fg-mute line-through' : 'text-ruby-text'}`}>
+                        <p className={`font-bold ${s.anulada ? 'text-fg-mute line-through' : 'text-fg'}`}>
                           S/ {s.total.toFixed(2)}
                         </p>
                         <p className="text-sm text-fg-mute">
@@ -301,11 +301,11 @@ export default function Caja() {
             <div className="rounded-xl border border-line bg-inset p-3">
               <div className="flex justify-between text-sm">
                 <span className="text-fg-soft">Ganado hoy</span>
-                <span className="font-bold text-ruby-text">S/ {totalVendido.toFixed(2)}</span>
+                <span className="font-bold text-title">S/ {totalVendido.toFixed(2)}</span>
               </div>
               <div className="mt-1 flex justify-between text-sm">
                 <span className="text-fg-soft">Efectivo del día</span>
-                <span className="font-bold text-accent-text">S/ {esperadoEnGaveta.toFixed(2)}</span>
+                <span className="font-bold text-title">S/ {esperadoEnGaveta.toFixed(2)}</span>
               </div>
               {Number(monto) > 0 && (
                 <div className="mt-1 flex justify-between text-sm">

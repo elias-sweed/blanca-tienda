@@ -1,8 +1,10 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { Button } from './ui/Button'
+import { FilterChips } from './ui/FilterChips'
 import { Input } from './ui/Input'
 import { Modal } from './ui/Modal'
 import { useToast } from './ui/ToastContext'
+import { useTema, type Tema } from '../hooks/useTema'
 import { guardarPerfil, prepararFoto, type Perfil } from '../utils/perfil'
 
 interface Props {
@@ -19,6 +21,7 @@ interface Props {
  */
 export function Configuracion({ open, perfil, onClose, onGuardar }: Props) {
   const { show } = useToast()
+  const { tema, setTema } = useTema()
   // El componente se remonta con `key` al abrir, así el estado arranca con el
   // perfil actual sin necesidad de un efecto.
   const [nombre, setNombre] = useState(perfil.nombre)
@@ -58,7 +61,7 @@ export function Configuracion({ open, perfil, onClose, onGuardar }: Props) {
     <Modal open={open} title="Configuración" onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col items-center gap-2">
-          <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-accent-text/60 bg-accent/30 shadow-[0_0_10px_rgba(0,217,255,0.35)]">
+          <span className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-line-active/60 bg-cta/20">
             {foto && <img src={foto} alt="Tu foto de perfil" className="h-full w-full object-cover" />}
           </span>
           <div className="flex gap-2">
@@ -82,6 +85,20 @@ export function Configuracion({ open, perfil, onClose, onGuardar }: Props) {
           placeholder="Ej: Blanca"
           maxLength={40}
         />
+
+        <div className="flex flex-col gap-1">
+          <FilterChips<Tema>
+            titulo="Tema"
+            valor={tema}
+            onChange={setTema}
+            opciones={[
+              { valor: 'sistema', etiqueta: 'Automático' },
+              { valor: 'claro', etiqueta: 'Claro' },
+              { valor: 'oscuro', etiqueta: 'Oscuro' },
+            ]}
+          />
+          <p className="text-xs text-fg-mute">Automático usa el tema de tu teléfono.</p>
+        </div>
 
         <Button size="lg" onClick={guardar} disabled={ocupado}>
           Guardar

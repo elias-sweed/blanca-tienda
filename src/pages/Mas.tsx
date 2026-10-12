@@ -9,7 +9,7 @@ export default function Mas() {
         <Link to="/historial">
           <Card>
             <p className="font-medium">Historial</p>
-            <p className="text-sm text-fg-mute/80">Ver ventas, movimientos y cierres</p>
+            <p className="text-sm text-fg-mute">Ver ventas, movimientos y cierres</p>
           </Card>
         </Link>
       </div>

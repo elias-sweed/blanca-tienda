@@ -29,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="rounded-xl bg-gradient-to-b from-cta-hover to-cta px-6 py-3 font-bold text-white shadow-lg"
+            className="rounded-xl bg-cta-surface px-6 py-3 font-bold text-white shadow-sm border border-cta-surface"
           >
             Recargar
           </button>

@@ -23,7 +23,7 @@ export function ErrorState({
       className="flex flex-col items-center gap-3 rounded-2xl border border-danger/40 bg-danger/10 px-4 py-8 text-center"
     >
       <span
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-danger text-2xl font-bold text-white"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-danger text-2xl font-bold text-on-fill"
         aria-hidden="true"
       >
         !

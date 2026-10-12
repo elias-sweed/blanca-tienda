@@ -86,7 +86,7 @@ export function Modal({ open, title, onClose, children }: Props) {
           aria-modal="true"
           aria-label={title}
           tabIndex={-1}
-          className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-line-strong bg-raised p-5 shadow-2xl shadow-black/80 focus:outline-none sm:rounded-3xl"
+          className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-line-strong bg-raised p-5 shadow-xl focus:outline-none sm:rounded-3xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-4 flex items-center justify-between border-b border-line pb-3">

@@ -29,7 +29,7 @@ export function BottomNav() {
               className={({ isActive }) =>
                 `flex flex-1 flex-col items-center gap-0.5 border-t-2 py-2 text-xs transition-colors duration-150 ${
                   isActive
-                    ? 'border-accent-text font-bold text-fg'
+                    ? 'border-line-active font-bold text-title'
                     : 'border-transparent font-medium text-fg-mute hover:text-fg-soft'
                 }`
               }
@@ -38,7 +38,7 @@ export function BottomNav() {
                 {item.icon}
                 {aviso && (
                   <span
-                    className="absolute -right-2.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white"
+                    className="absolute -right-2.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-on-fill"
                     aria-hidden="true"
                   >
                     {bajos > 9 ? '9+' : bajos}

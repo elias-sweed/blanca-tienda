@@ -17,7 +17,7 @@ interface TrueFocusProps {
 export function TrueFocus({
   sentence = 'True Focus',
   separator = ' ',
-  borderColor = '#00F5FF',
+  borderColor = '#65C8B8',
   animationDuration = 0.8,
   pauseBetweenAnimations = 1.2,
   fontSize = '1.25rem',

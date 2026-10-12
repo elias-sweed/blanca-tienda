@@ -44,10 +44,10 @@ export function SearchBox({
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           aria-describedby="busqueda-ayuda"
-          className={`w-full rounded-xl border bg-inset py-3 pl-4 pr-11 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition-colors duration-150 focus:outline-none ${
+          className={`w-full rounded-xl border bg-inset py-3 pl-4 pr-11 text-base font-semibold text-fg placeholder:text-fg-mute transition-colors duration-150 focus:outline-none ${
             sinResultados
               ? 'border-danger focus:border-danger focus:ring-2 focus:ring-danger/40'
-              : 'border-line focus:border-accent-text focus:ring-2 focus:ring-accent/40'
+              : 'border-line focus:border-line-active focus:ring-2 focus:ring-line-active/30'
           }`}
         />
 

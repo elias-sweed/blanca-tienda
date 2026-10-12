@@ -44,7 +44,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
               onClick={() => setMenu(!menu)}
               aria-label="Perfil y ayuda"
               aria-expanded={menu}
-              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-accent-text/60 bg-accent/30 shadow-[0_0_6px_rgba(0,217,255,0.35)] transition-transform duration-150 active:scale-95"
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-line-active/60 bg-cta/20 transition-transform duration-150 active:scale-95"
             >
               {perfil.foto && <img src={perfil.foto} alt="" className="h-full w-full object-cover" />}
             </button>
@@ -54,16 +54,14 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
             <span
               aria-hidden="true"
               className={`absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full ring-2 ring-chrome ${
-                online
-                  ? 'bg-success shadow-[0_0_6px_rgba(57,255,20,0.9)]'
-                  : 'bg-danger shadow-[0_0_6px_rgba(255,23,68,0.9)]'
+                online ? 'bg-success' : 'bg-danger'
               }`}
             />
 
             {menu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
-                <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-line-strong bg-raised p-2 shadow-2xl shadow-black/80">
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-line-strong bg-raised p-2 shadow-xl">
                   <div className="border-b border-line px-3 pb-2 pt-1">
                     <p className="truncate text-sm font-bold text-title">{perfil.nombre || 'Mi perfil'}</p>
                     <p className="truncate text-xs text-fg-mute">Blanca Tienda</p>

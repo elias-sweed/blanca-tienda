@@ -70,14 +70,14 @@ export default function Inicio() {
           <div
             className={`rounded-2xl border p-4 transition-transform duration-150 ease-out will-change-transform active:scale-[0.99] ${
               register
-                ? 'border-line-active/60 bg-selected shadow-[0_0_24px_rgba(0,245,255,0.2)]'
+                ? 'border-line-active/60 bg-selected'
                 : 'border-accent/50 bg-accent-soft/50'
             }`}
           >
             {register ? (
               <>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-wider text-title-accent">Caja abierta</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-cta-text">Caja abierta</p>
                   <span className="text-xs text-fg-mute">Ver caja →</span>
                 </div>
                 <p className="mt-1 text-2xl font-bold text-fg">S/ {(cash?.esperado ?? 0).toFixed(2)}</p>
@@ -90,11 +90,11 @@ export default function Inicio() {
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/25 text-2xl">🔒</span>
                   <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-wider text-title-accent">Aún no abriste la caja</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-cta-text">Aún no abriste la caja</p>
                     <p className="text-sm text-fg-soft">Para comenzar a vender tienes que abrir caja</p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between rounded-xl bg-cta px-4 py-3 shadow-[0_0_20px_rgba(0,245,255,0.45)]">
+                <div className="mt-3 flex items-center justify-between rounded-xl border border-cta-surface bg-cta-surface px-4 py-3">
                   <span className="font-bold text-white">Toca aquí para abrir caja</span>
                   <span className="text-lg text-white">→</span>
                 </div>
@@ -128,7 +128,7 @@ export default function Inicio() {
           </Card>
           <Card>
             <p className="text-sm text-fg-mute">Productos vendidos</p>
-            <p className="text-2xl font-bold text-accent-text">{stats?.sold ?? 0}</p>
+            <p className="text-2xl font-bold text-title">{stats?.sold ?? 0}</p>
           </Card>
           <Card>
             <p className="text-sm text-fg-mute">Productos con pocas unidades</p>

@@ -250,11 +250,11 @@ function SalesHistory({ filtro }: { filtro: FiltroHistorialProps }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className={`font-bold ${s.anulada ? 'text-fg-mute line-through' : 'text-ruby-text'}`}>
+                  <p className={`font-bold ${s.anulada ? 'text-fg-mute line-through' : 'text-fg'}`}>
                     S/ {s.total.toFixed(2)}
                   </p>
                   {s.anulada && (
-                    <span className="rounded-full bg-danger/20 px-2 py-0.5 text-xs font-bold text-danger">
+                    <span className="rounded-full border border-danger/50 px-2 py-0.5 text-xs font-bold text-danger">
                       Anulada
                     </span>
                   )}
@@ -313,7 +313,7 @@ function SalesHistory({ filtro }: { filtro: FiltroHistorialProps }) {
           <div className="rounded-xl border border-line bg-inset p-3">
             <div className="flex justify-between text-sm">
               <span className="text-fg-soft">Venta</span>
-              <span className="font-bold text-ruby-text">S/ {anular?.total.toFixed(2)}</span>
+              <span className="font-bold text-fg">S/ {anular?.total.toFixed(2)}</span>
             </div>
             <div className="mt-1 flex justify-between text-sm">
               <span className="text-fg-soft">Fecha</span>
@@ -498,7 +498,7 @@ function ClosuresHistory({ filtro }: { filtro: FiltroHistorialProps }) {
                 ))}
               <div className="flex items-center justify-between border-t border-line pt-1">
                 <span className="text-fg-soft">Esperado en gaveta</span>
-                <span className="font-bold text-cta-text">S/ {c.expectedCash.toFixed(2)}</span>
+                <span className="font-bold text-fg">S/ {c.expectedCash.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-fg-soft">Contado</span>

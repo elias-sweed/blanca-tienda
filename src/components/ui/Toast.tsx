@@ -65,10 +65,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const colors: Record<ToastType, string> = {
-    success: 'bg-surface text-success border-success/50 shadow-[0_0_18px_rgba(57,255,20,0.4)]',
-    error: 'bg-surface text-danger border-danger/60 shadow-[0_0_18px_rgba(255,23,68,0.5)]',
-    info: 'bg-surface text-info border-info/50 shadow-[0_0_18px_rgba(40,100,255,0.45)]',
-    warning: 'bg-warning text-black border-warning shadow-[0_0_18px_rgba(255,255,0,0.35)]',
+    success: 'bg-surface text-success border-success/50 shadow-lg',
+    error: 'bg-surface text-danger border-danger/60 shadow-lg',
+    info: 'bg-surface text-info border-info/50 shadow-lg',
+    warning: 'bg-warning text-on-fill border-warning shadow-lg',
   }
 
   const icon: Record<ToastType, string> = {
@@ -91,7 +91,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 text-left font-semibold shadow-xl shadow-black/80 ${colors[t.type]}`}
+            className={`pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 text-left font-semibold shadow-lg ${colors[t.type]}`}
           >
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-sm font-bold">
               {icon[t.type]}

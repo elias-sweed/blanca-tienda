@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 import { TarjetaCyber } from '../cyber/TarjetaCyber'
 
 /**
- * Envoltorio retrocompatible. La implementación vive en `TarjetaCyber`, que ya
- * cumple las reglas de rendimiento (memo, brillo por opacidad, sin backdrop-filter).
+ * Envoltorio retrocompatible. La implementación vive en `TarjetaCyber`:
+ * superficie neutra, borde sutil y sombra pequeña, sin efectos costosos.
  */
 export function Card({
   children,
@@ -13,7 +13,7 @@ export function Card({
   className?: string
 }) {
   return (
-    <TarjetaCyber className={['shadow-lg shadow-black/60', className].join(' ')}>
+    <TarjetaCyber className={['shadow-sm', className].join(' ')}>
       {children}
     </TarjetaCyber>
   )

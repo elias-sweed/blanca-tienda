@@ -190,7 +190,7 @@ export default function Inventario() {
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className={`text-2xl font-bold ${bajo ? 'text-danger' : 'text-ruby-text'}`}>{quantity}</p>
+                  <p className={`text-2xl font-bold ${bajo ? 'text-danger' : 'text-fg'}`}>{quantity}</p>
                   <p className="text-xs text-fg-mute">disponibles</p>
                 </div>
               </div>
@@ -481,7 +481,7 @@ function AdjustModal({ variant, onClose, onDone }: {
           <div className="rounded-xl border border-line bg-inset p-3">
             <div className="flex justify-between text-sm">
               <span className="text-fg-soft">Lo que dice la app</span>
-              <span className="font-bold text-ruby-text">{variant.quantity}</span>
+              <span className="font-bold text-fg">{variant.quantity}</span>
             </div>
           </div>
         )}
@@ -499,7 +499,7 @@ function AdjustModal({ variant, onClose, onDone }: {
         {diff !== null && diff !== 0 && (
           <div
             className={`rounded-xl border p-3 ${
-              diff > 0 ? 'border-cta-text/40 bg-cta/15' : 'border-danger/40 bg-danger/10'
+              diff > 0 ? 'border-cta-text/40' : 'border-danger/40'
             }`}
           >
             <div className="flex justify-between text-sm">

@@ -24,10 +24,10 @@ export function LowStockAlert({ items, max = 3 }: Props) {
       className="mb-4 rounded-2xl border border-warning/50 bg-warning/10 p-4"
     >
       <div className="flex items-center gap-2">
-        <span
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning text-sm font-bold text-black"
-          aria-hidden="true"
-        >
+          <span
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning text-sm font-bold text-on-fill"
+            aria-hidden="true"
+          >
           !
         </span>
         <p className="font-bold text-warning">
@@ -52,7 +52,7 @@ export function LowStockAlert({ items, max = 3 }: Props) {
 
       <Link
         to="/inventario"
-        className="mt-3 inline-block rounded-xl border border-warning/50 px-4 py-2 text-sm font-bold text-warning transition-colors duration-150 hover:bg-warning/15"
+        className="mt-3 inline-block rounded-xl border border-warning/50 px-4 py-2 text-sm font-bold text-warning transition-colors duration-150 hover:bg-warning/10"
       >
         Reponer en Inventario →
       </Link>

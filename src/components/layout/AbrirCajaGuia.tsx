@@ -49,7 +49,7 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
           // El aviso de toque fuera se resuelve con opacidad del fondo, no con
           // backdrop-filter: animar un filtro obliga a recomponer toda la
           // pantalla y hunde los FPS en WebViews antiguas.
-          backgroundColor: `rgba(5,5,10,${desenfocado ? 0.92 : 0.7})`,
+          backgroundColor: `rgba(16,18,22,${desenfocado ? 0.92 : 0.7})`,
           transition: 'background-color 150ms linear',
         }}
         onPointerDown={(e) => {
@@ -61,7 +61,7 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
       >
       <div
         data-guia-panel
-        className="w-full max-w-sm rounded-3xl border border-line-active bg-raised p-6 shadow-[0_0_40px_rgba(139,0,255,0.35)] shadow-2xl shadow-black/90"
+        className="w-full max-w-sm rounded-3xl border border-line-active bg-raised p-6 shadow-xl"
       >
         <div className="flex flex-col items-center gap-4 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/25 text-3xl">🔒</span>

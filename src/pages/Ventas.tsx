@@ -195,7 +195,7 @@ export default function Ventas() {
             className="fixed inset-0 flex items-center justify-center bg-black/80"
             style={{ zIndex: Z_OVERLAY }}
           >
-          <div className="mx-4 w-full max-w-sm rounded-3xl border border-line-strong bg-raised p-6 shadow-2xl shadow-black/80">
+          <div className="mx-4 w-full max-w-sm rounded-3xl border border-line-strong bg-raised p-6 shadow-xl">
             <div className="flex flex-col items-center gap-4 text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/25 text-3xl">🔒</span>
               <div>
@@ -309,7 +309,7 @@ export default function Ventas() {
                       <p className="text-sm text-fg-mute">
                         {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
                       </p>
-                      <p className="mt-1 text-lg font-bold text-ruby-text">S/ {product.price.toFixed(2)}</p>
+                      <p className="mt-1 text-lg font-bold text-fg">S/ {product.price.toFixed(2)}</p>
                       <p className={`text-xs ${variant.quantity <= 5 ? 'font-bold text-warning' : 'text-fg-mute'}`}>
                         {variant.quantity} disponibles
                       </p>
@@ -335,7 +335,7 @@ export default function Ventas() {
           {outOfStock.length > 0 && (
             <div className="mb-6 mt-4">
               <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-danger">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-danger text-sm font-bold text-fg">!</span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-danger text-sm font-bold text-on-fill">!</span>
                 Agotado
               </h2>
               <div className="grid grid-cols-2 gap-3">
@@ -361,12 +361,12 @@ export default function Ventas() {
       {/* Floating Cart Button */}
       <button
         onClick={() => setOpenCart(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-cta-hover to-cta text-2xl shadow-[0_0_24px_rgba(0,245,255,0.55)] shadow-lg shadow-black/70 ring-1 ring-cta/40 transition-transform duration-150 ease-out will-change-transform active:scale-95"
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-cta-surface bg-cta-surface text-2xl text-white shadow-lg transition-transform duration-150 ease-out will-change-transform active:scale-95"
         aria-label={`Abrir carrito, ${unidades} ${unidades === 1 ? 'producto' : 'productos'}`}
       >
         🛒
         {unidades > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-label-active text-xs font-bold text-white shadow-[0_0_10px_rgba(255,0,229,0.8)]">
+          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-danger text-xs font-bold text-on-fill">
             {unidades}
           </span>
         )}
@@ -589,7 +589,7 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <span className="mr-1 whitespace-nowrap text-sm font-bold text-ruby-text">
+                  <span className="mr-1 whitespace-nowrap text-sm font-bold text-fg">
                     S/ {((Number(d.price) || 0) * (Number(d.quantity) || 0)).toFixed(2)}
                   </span>
                   <button
@@ -601,7 +601,7 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
                   </button>
                   <button
                     onClick={() => removeDraft(d.key)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/40 text-danger transition-colors duration-150 hover:bg-danger/15"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/40 text-danger transition-colors duration-150 hover:border-danger hover:bg-danger hover:text-on-fill"
                     aria-label="Eliminar producto"
                   >
                     ×
@@ -678,7 +678,7 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
           <div className="rounded-xl border border-line bg-inset p-3">
             <div className="flex justify-between text-lg font-bold">
               <span className="text-fg-soft">Total</span>
-              <span className="text-ruby-text">S/ {total.toFixed(2)}</span>
+              <span className="text-title">S/ {total.toFixed(2)}</span>
             </div>
           </div>
 
