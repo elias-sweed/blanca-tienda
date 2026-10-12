@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FondoNeon } from '../cyber/FondoNeon'
 import { Configuracion } from '../Configuracion'
 import { Tutorial } from '../Tutorial'
@@ -25,6 +26,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
   const [config, setConfig] = useState(false)
   const [perfil, setPerfil] = useState<Perfil>(() => leerPerfil())
   const online = useOnlineStatus()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000)
@@ -85,6 +87,16 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
                   >
                     <span aria-hidden="true">❓</span> Cómo usar esta app?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenu(false)
+                      navigate('/historial')
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
+                  >
+                    <span aria-hidden="true">📋</span> Historial
                   </button>
                 </div>
               </>

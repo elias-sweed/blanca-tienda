@@ -107,6 +107,18 @@ export default function Inicio() {
       {/* Notificación contextual: solo aparece si hay algo que reponer. */}
       <LowStockAlert items={lowStock.data ?? []} />
 
+      <Link to="/compras" className="mb-4 block">
+        <Card>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl" aria-hidden="true">🛍️</span>
+            <div className="min-w-0">
+              <p className="font-bold text-fg">Calcular una compra al por mayor</p>
+              <p className="text-sm text-fg-mute">Mira si te conviene antes de comprar →</p>
+            </div>
+          </div>
+        </Card>
+      </Link>
+
       <h2 className="mb-3 text-lg font-semibold text-title">Resumen de hoy</h2>
 
       {statsState.status === 'error' ? (

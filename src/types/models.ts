@@ -98,3 +98,35 @@ export interface SyncQueueItem {
   lastError?: string
   createdAt: string
 }
+
+/** Compra al por mayor: solo números ('calculada') o ya comprada ('registrada'). */
+export type CompraEstado = 'calculada' | 'registrada'
+
+/** De dónde salió la plata: de la gaveta, de otra plata, o todavía no se paga. */
+export type CompraPago = 'gaveta' | 'aparte' | 'no-pagada'
+
+export interface Compra extends BaseEntity {
+  productoId: string
+  varianteId: string
+  /** Copia del nombre al momento de la compra, para que el historial no cambie. */
+  nombre: string
+  /** Copia de la talla/color, ej. "Talla M · Negro" o "Única". */
+  detalleVariante: string
+  mayorista: string
+  /** Fecha de compra en AAAA-MM-DD. */
+  fecha: string
+  paquetes: number
+  precioPaquete: number
+  unidadesPorPaquete: number
+  costoTotal: number
+  unidadesTotal: number
+  costoUnitario: number
+  /** Precio de venta por unidad; null si todavía no se decide. */
+  precioVenta: number | null
+  gananciaUnitaria: number | null
+  gananciaTotal: number | null
+  estado: CompraEstado
+  pago: CompraPago
+  /** Si las unidades ya subieron al inventario (solo en 'registrada'). */
+  sumadoAlInventario: boolean
+}

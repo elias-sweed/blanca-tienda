@@ -17,13 +17,14 @@ import { db } from '../lib/db'
 import { voidSale } from '../services/sales'
 import { calcularPaginas, paginar } from '../utils/paginacion'
 import { rankMatches } from '../utils/search'
+import { formatearFechaCorta } from '../utils/compra'
 import { round2 } from '../utils/money'
-import type { MovementReason, Sale, SaleItem } from '../types/models'
+import type { Compra, MovementReason, Sale, SaleItem } from '../types/models'
 
-type Tab = 'ventas' | 'movimientos' | 'cierres'
+type Tab = 'ventas' | 'movimientos' | 'cierres' | 'compras'
 type OrdenHistorial = 'recientes' | 'antiguos'
 
-/** Estado del filtro compartido por las 3 pestañas. */
+/** Estado del filtro compartido por las 4 pestañas. */
 interface FiltroHistorialProps {
   busqueda: string
   onBusqueda: (v: string) => void
@@ -83,7 +84,7 @@ export default function Historial() {
   return (
     <AppLayout title="Historial">
       <div className="mb-4 flex gap-2">
-        {(['ventas', 'movimientos', 'cierres'] as Tab[]).map((t) => (
+        {(['ventas', 'movimientos', 'cierres', 'compras'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => {
@@ -104,11 +105,12 @@ export default function Historial() {
       {tab === 'ventas' && <SalesHistory filtro={filtro} />}
       {tab === 'movimientos' && <MovementsHistory filtro={filtro} />}
       {tab === 'cierres' && <ClosuresHistory filtro={filtro} />}
+      {tab === 'compras' && <ComprasHistory filtro={filtro} />}
     </AppLayout>
   )
 }
 
-/** Buscador + chips "recientes / antiguos", idénticos en las 3 pestañas. */
+/** Buscador + chips "recientes / antiguos", idénticos en las 4 pestañas. */
 function FiltroHistorial({
   filtro,
   resultados,
@@ -518,6 +520,133 @@ function ClosuresHistory({ filtro }: { filtro: FiltroHistorialProps }) {
           </Card>
         )
       })}
+      <Paginator pagina={paginaActual} totalPaginas={totalPaginas} onChange={filtro.onPagina} />
+      </div>
+    </>
+  )
+}
+
+function ComprasHistory({ filtro }: { filtro: FiltroHistorialProps }) {
+  const [state, retry] = useQueryState(() => db.compras.reverse().sortBy('createdAt'), [])
+
+  if (state.status === 'loading' && state.data === null) {
+    return <LoadingState rows={4} label="Cargando compras..." />
+  }
+
+  if (state.status === 'error') {
+    return (
+      <ErrorState
+        title="No pudimos cargar las compras"
+        description="Las compras al por mayor no están disponibles ahora mismo."
+        onRetry={retry}
+      />
+    )
+  }
+
+  const compras = state.data ?? []
+  if (compras.length === 0) {
+    return (
+      <EmptyState
+        icon="🛍️"
+        title="Sin compras"
+        description="Regístralas desde la pantalla Compras."
+      />
+    )
+  }
+
+  const filtradas = rankMatches(compras, filtro.busqueda, (c) => [c.nombre, c.mayorista])
+  filtradas.sort((a, b) => porFecha(a, b, filtro.orden))
+
+  const totalPaginas = calcularPaginas(filtradas.length)
+  const paginaActual = Math.min(filtro.pagina, totalPaginas)
+  const paginaItems = paginar(filtradas, paginaActual)
+
+  return (
+    <>
+      <FiltroHistorial
+        filtro={filtro}
+        resultados={filtradas.length}
+        total={compras.length}
+        placeholder="Ej: medias, Mayorista Central"
+      />
+      {filtradas.length === 0 && (
+        <SinResultados busqueda={filtro.busqueda} onBorrar={() => filtro.onBusqueda('')} />
+      )}
+      <div className="flex flex-col gap-3">
+      {paginaItems.map((c: Compra) => (
+        <Card key={c.id}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-bold">
+                {c.nombre}
+                <span className="font-semibold text-fg-mute"> · {c.detalleVariante}</span>
+              </p>
+              <p className="text-sm text-fg-mute">
+                {c.mayorista} · {formatearFechaCorta(c.fecha)}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <span
+                className={`rounded-full border px-2 py-0.5 text-xs font-bold ${
+                  c.estado === 'registrada'
+                    ? 'border-success/50 text-success'
+                    : 'border-line-strong text-fg-mute'
+                }`}
+              >
+                {c.estado === 'registrada' ? 'Comprada' : 'Solo cálculo'}
+              </span>
+              {c.estado === 'registrada' && (
+                <span className="rounded-full border border-line-strong px-2 py-0.5 text-xs font-bold text-fg-soft">
+                  {c.pago === 'gaveta' ? 'Pagada de la gaveta' : c.pago === 'aparte' ? 'Plata aparte' : 'Todavía no pagada'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-col gap-1 border-t border-line pt-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-fg-soft">Paquetes</span>
+              <span className="font-bold text-fg">
+                {c.paquetes} × S/ {c.precioPaquete.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-fg-soft">Pagaste en total</span>
+              <span className="font-bold text-fg">S/ {c.costoTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-fg-soft">Unidades en total</span>
+              <span className="font-bold text-fg">{c.unidadesTotal}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-fg-soft">Te cuesta cada unidad</span>
+              <span className="font-bold text-fg">S/ {c.costoUnitario.toFixed(2)}</span>
+            </div>
+            {c.precioVenta !== null && (
+              <div className="flex items-center justify-between">
+                <span className="text-fg-soft">La vendes a</span>
+                <span className="font-bold text-fg">S/ {c.precioVenta.toFixed(2)}</span>
+              </div>
+            )}
+            {c.gananciaUnitaria !== null && c.gananciaTotal !== null && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-fg-soft">Ganas por cada unidad</span>
+                  <span className={`font-bold ${c.gananciaUnitaria > 0 ? 'text-success' : 'text-danger'}`}>
+                    S/ {c.gananciaUnitaria.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-fg-soft">Ganancia si vendes todo</span>
+                  <span className={`font-bold ${c.gananciaTotal > 0 ? 'text-success' : 'text-danger'}`}>
+                    S/ {c.gananciaTotal.toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
+      ))}
       <Paginator pagina={paginaActual} totalPaginas={totalPaginas} onChange={filtro.onPagina} />
       </div>
     </>

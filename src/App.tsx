@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { BottomNav } from './components/layout/BottomNav'
 import { Button } from './components/ui/Button'
+import Compras from './pages/Compras'
 import Inicio from './pages/Inicio'
 import Ventas from './pages/Ventas'
 import Inventario from './pages/Inventario'
@@ -28,9 +29,10 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Inicio />} />
-        <Route path="/ventas" element={<Ventas />} />
-        <Route path="/inventario" element={<Inventario />} />
-        <Route path="/caja" element={<Caja />} />
+      <Route path="/ventas" element={<Ventas />} />
+      <Route path="/inventario" element={<Inventario />} />
+      <Route path="/caja" element={<Caja />} />
+      <Route path="/compras" element={<Compras />} />
         <Route path="/mas" element={<Mas />} />
         <Route path="/historial" element={<Historial />} />
         <Route path="*" element={<NotFound />} />

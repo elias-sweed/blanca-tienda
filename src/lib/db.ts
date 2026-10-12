@@ -7,6 +7,7 @@ import type {
   InventoryMovement,
   CashRegister,
   CashClosure,
+  Compra,
   SyncQueueItem,
 } from '../types/models'
 
@@ -18,6 +19,7 @@ const db = new Dexie('tienda-blanca') as Dexie & {
   inventoryMovements: EntityTable<InventoryMovement, 'id'>
   cashRegisters: EntityTable<CashRegister, 'id'>
   cashClosures: EntityTable<CashClosure, 'id'>
+  compras: EntityTable<Compra, 'id'>
   syncQueue: EntityTable<SyncQueueItem, 'id'>
 }
 
@@ -51,6 +53,13 @@ db.version(3).stores({
 // Migración aditiva: solo crea el índice, no toca los datos existentes.
 db.version(4).stores({
   sales: 'id, date, paymentMethod, syncStatus, registerId, anulada, clientRequestId',
+})
+
+// v5: tabla nueva `compras` para las compras al por mayor (paquete, mayorista,
+// costo por unidad y ganancia estimada). Ninguna tabla anterior guarda eso.
+// Migración aditiva: solo agrega la tabla, no toca los datos existentes.
+db.version(5).stores({
+  compras: 'id, fecha, mayorista, productoId, estado',
 })
 
 export { db }
