@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -12,7 +12,7 @@ import { StepperInput } from '../components/ui/StepperInput'
 import { useToast } from '../components/ui/ToastContext'
 import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
-import { addStock, addVariant, adjustStock, createProduct, type ProductVariantInput } from '../services/inventory'
+import { addStock, addVariant, adjustStock, createProduct, updateProduct, type ProductVariantInput } from '../services/inventory'
 import type { Product, ProductVariant } from '../types/models'
 import { rankMatches } from '../utils/search'
 import { firstError, validateAmount, validateName, validateQuantity } from '../utils/validation'
@@ -39,6 +39,7 @@ export default function Inventario() {
   const [entryFor, setEntryFor] = useState<ProductVariant | null>(null)
   const [adjustFor, setAdjustFor] = useState<ProductVariant | null>(null)
   const [variantFor, setVariantFor] = useState<Product | null>(null)
+  const [editFor, setEditFor] = useState<Product | null>(null)
   const [showInactive, setShowInactive] = useState(false)
 
   const [productsState, retryProducts] = useQueryState(async () => {
@@ -186,9 +187,14 @@ export default function Inventario() {
               )}
 
               {!inactivo && (
-                <Button variant="ghost" size="md" className="mt-3 w-full" onClick={() => setVariantFor(product)}>
-                  + Agregar talla / color
-                </Button>
+                <div className="mt-3 flex gap-2">
+                  <Button variant="ghost" size="md" className="flex-1" onClick={() => setEditFor(product)}>
+                    Editar
+                  </Button>
+                  <Button variant="ghost" size="md" className="flex-1" onClick={() => setVariantFor(product)}>
+                    + Agregar talla / color
+                  </Button>
+                </div>
               )}
             </Card>
           )
@@ -221,6 +227,15 @@ export default function Inventario() {
         onDone={() => {
           show('Variante agregada')
           setVariantFor(null)
+        }}
+      />
+
+      <EditProductModal
+        product={editFor}
+        onClose={() => setEditFor(null)}
+        onDone={() => {
+          show('Producto actualizado')
+          setEditFor(null)
         }}
       />
     </AppLayout>
@@ -580,6 +595,92 @@ function NewVariantModal({ product, onClose, onDone }: {
           onChange={(e) => setQty(e.target.value)}
         />
         <Button size="lg" onClick={save} disabled={busy}>Agregar variante</Button>
+      </div>
+    </Modal>
+  )
+}
+
+function EditProductModal({ product, onClose, onDone }: {
+  product: Product | null
+  onClose: () => void
+  onDone: () => void
+}) {
+  const { show } = useToast()
+  const [name, setName] = useState('')
+  const [price, setPrice] = useState('')
+  const [category, setCategory] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const nameCheck = validateName(name, 'el nombre')
+  const priceCheck = validateAmount(price, 'el precio')
+  const nameError = name !== '' && !nameCheck.ok ? nameCheck.error : null
+  const priceError = price !== '' && !priceCheck.ok ? priceCheck.error : null
+
+  useEffect(() => {
+    if (product) {
+      setName(product.name)
+      setPrice(product.price.toFixed(2))
+      setCategory(product.category ?? '')
+    }
+  }, [product])
+
+  function reset() {
+    setName(''); setPrice(''); setCategory('')
+  }
+
+  async function save() {
+    if (busy || !product) return
+    const error = firstError(nameCheck, priceCheck)
+    if (error) {
+      show(error, 'error')
+      return
+    }
+    setBusy(true)
+    try {
+      await updateProduct(product.id, {
+        name,
+        price: priceCheck.ok ? priceCheck.value : 0,
+        category,
+      })
+      onDone()
+      reset()
+    } catch (e) {
+      show(e instanceof Error ? e.message : 'No se pudo guardar', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal open={!!product} title={`Editar: ${product?.name ?? ''}`} onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <Input
+          label="Nombre del producto"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Ej: Polo básico"
+          error={nameError ?? undefined}
+        />
+
+        <div className="flex flex-col gap-1">
+          <StepperInput
+            label="Precio de Venta"
+            value={price}
+            onChange={setPrice}
+            onInvalid={() => show('Aquí solo van números, no se aceptan letras', 'error')}
+            prefix="S/"
+            step={1}
+            decimal
+            placeholder="0.00"
+          />
+          {priceError && <p className="text-sm font-semibold text-danger">{priceError}</p>}
+        </div>
+
+        <Input label="Categoría (opcional)" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Polos" />
+
+        <Button size="lg" onClick={save} disabled={busy}>
+          {busy ? 'Guardando...' : 'Guardar cambios'}
+        </Button>
       </div>
     </Modal>
   )
