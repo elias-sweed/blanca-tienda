@@ -4,16 +4,24 @@ interface Props {
   text: string
 }
 
+/**
+ * Botón "?" con ayuda en palabras sencillas. El punto se anima con un latido
+ * suave de solo opacidad (2.4 s) para invitar al toque sin distraer; se detiene
+ * mientras la ayuda está abierta. Se apaga solo si el sistema pide menos movimiento.
+ */
 export function HelpTooltip({ text }: Props) {
   const [open, setOpen] = useState(false)
 
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block align-middle">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-line-strong text-xs font-bold text-fg-mute transition-colors duration-150 hover:border-accent-text hover:text-accent-text"
         aria-label="Ayuda"
+        aria-expanded={open}
+        className={`ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-accent-text/60 bg-accent/30 text-xs font-bold leading-none text-accent-text shadow-[0_0_6px_rgba(0,217,255,0.35)] transition-colors duration-150 hover:bg-accent/50 ${
+          open ? '' : 'animate-ayuda-latido'
+        }`}
       >
         ?
       </button>

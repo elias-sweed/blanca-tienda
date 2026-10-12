@@ -157,10 +157,15 @@ export default function Inventario() {
                 <span>Precio: S/ {product.price.toFixed(2)}</span>
                 {inactivo ? (
                   <span className="text-fg-mute">Dado de baja</span>
-                ) : bajo ? (
-                  <span className="text-danger">Poco stock</span>
                 ) : (
-                  <span className="text-fg-mute">Mín. {product.stockMin}</span>
+                  <span className="flex items-center gap-0.5">
+                    {bajo ? (
+                      <span className="text-danger">Poco stock</span>
+                    ) : (
+                      <span className="text-fg-mute">Mín. {product.stockMin}</span>
+                    )}
+                    <HelpTooltip text="Es la cantidad mínima que quieres tener. Si llegas a quedarte con menos, te avisamos en Inicio y en Ventas." />
+                  </span>
                 )}
               </div>
 

@@ -65,6 +65,7 @@
   --animate-float-b: float-b 28s ease-in-out infinite;
   --animate-scanline: scanline 9s linear infinite;
   --animate-pulse-soft: pulse-soft 1.8s ease-in-out infinite;
+  --animate-ayuda-latido: ayuda-latido 2.4s ease-in-out infinite;
 
   --font-serif: "Playfair Display", Georgia, serif;
 }
@@ -107,6 +108,19 @@
   }
   50% {
     opacity: 0.9;
+  }
+}
+
+/* Latido del botón de ayuda "?": solo opacidad (ni layout ni paint).
+   Cíclo lento de 2.4 s para que llame la atención sin distraer y sin
+   coste notable en un teléfono antiguo. */
+@keyframes ayuda-latido {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
