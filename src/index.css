@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 @import "tailwindcss";
 
 /* ============================================================
@@ -67,7 +66,9 @@
   --animate-pulse-soft: pulse-soft 1.8s ease-in-out infinite;
   --animate-ayuda-latido: ayuda-latido 2.4s ease-in-out infinite;
 
-  --font-serif: "Playfair Display", Georgia, serif;
+  /* Sin-serif del sistema: se lee bien en pantallas chicas, no descarga
+     nada de internet y funciona igual con la app sin conexión. */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Sólo transform: ninguna de estas animaciones toca layout ni paint. */
@@ -132,8 +133,6 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
-    
-  --font-serif: "Playfair Display", Georgia, serif;
   }
 }
 
@@ -152,7 +151,7 @@ body {
   margin: 0;
   background-color: #05050a;
   color: #f1f0ff;
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   /* Evita rebote de scroll en WebViews antiguas durante el rebote táctil. */
