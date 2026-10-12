@@ -4,10 +4,12 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
+import { FilterChips } from '../components/ui/FilterChips'
 import { HelpTooltip } from '../components/ui/HelpTooltip'
 import { Input } from '../components/ui/Input'
 import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
+import { Paginator } from '../components/ui/Paginator'
 import { SearchBox } from '../components/ui/SearchBox'
 import { StepperInput } from '../components/ui/StepperInput'
 import { useToast } from '../components/ui/ToastContext'
@@ -15,8 +17,17 @@ import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
 import { addStock, addVariant, adjustStock, createProduct, updateProduct, type ProductVariantInput } from '../services/inventory'
 import type { Product, ProductVariant } from '../types/models'
+import { calcularPaginas, paginar } from '../utils/paginacion'
 import { rankMatches } from '../utils/search'
 import { firstError, validateAmount, validateName, validateQuantity } from '../utils/validation'
+
+type OrdenInventario = 'az' | 'nuevos' | 'modificados'
+
+const OPCIONES_ORDEN: { valor: OrdenInventario; etiqueta: string }[] = [
+  { valor: 'az', etiqueta: 'A-Z' },
+  { valor: 'nuevos', etiqueta: 'Últimos agregados' },
+  { valor: 'modificados', etiqueta: 'Últimos modificados' },
+]
 
 interface VariantDraft {
   key: string
@@ -36,6 +47,8 @@ function describeVariant(v: ProductVariant): string {
 export default function Inventario() {
   const { show } = useToast()
   const [search, setSearch] = useState('')
+  const [orden, setOrden] = useState<OrdenInventario>('az')
+  const [pagina, setPagina] = useState(1)
   const [openNew, setOpenNew] = useState(false)
   const [entryFor, setEntryFor] = useState<ProductVariant | null>(null)
   const [adjustFor, setAdjustFor] = useState<ProductVariant | null>(null)
@@ -61,16 +74,31 @@ export default function Inventario() {
   const loading = productsState.status === 'loading' && productsState.data === null
 
   // Búsqueda difusa: ignora acentos y mayúsculas, y busca también dentro de
-  // talla, color y categoría ("negro" encuentra el polo aunque solo esté en la variante).
-  const filtered = useMemo(
-    () =>
-      rankMatches(products, search, ({ product, variants }) => [
-        product.name,
-        product.category ?? '',
-        ...variants.map((v) => `${v.size ?? ''} ${v.color ?? ''}`),
-      ]),
-    [products, search],
-  )
+  // talla, color y categoría ("negro" encuentra el polo aunque solo esté en la
+  // variante). Después manda el chip elegido: A-Z, últimos agregados o
+  // últimos modificados.
+  const filtered = useMemo(() => {
+    const base = rankMatches(products, search, ({ product, variants }) => [
+      product.name,
+      product.category ?? '',
+      ...variants.map((v) => `${v.size ?? ''} ${v.color ?? ''}`),
+    ])
+    const ordenado = [...base]
+    if (orden === 'nuevos') {
+      ordenado.sort((a, b) => b.product.createdAt.localeCompare(a.product.createdAt))
+    } else if (orden === 'modificados') {
+      ordenado.sort((a, b) => b.product.updatedAt.localeCompare(a.product.updatedAt))
+    } else {
+      ordenado.sort((a, b) => a.product.name.localeCompare(b.product.name))
+    }
+    return ordenado
+  }, [products, search, orden])
+
+  // Paginación de 10 en 10. La página se acota a lo que existe: si la lista
+  // achica (por búsqueda o filtro), nunca se queda la pantalla en blanco.
+  const totalPaginas = calcularPaginas(filtered.length)
+  const paginaActual = Math.min(pagina, totalPaginas)
+  const paginaItems = useMemo(() => paginar(filtered, paginaActual), [filtered, paginaActual])
 
   const inactiveCount = products.filter((p) => !p.product.active || p.product.deleted).length
 
@@ -82,11 +110,26 @@ export default function Inventario() {
 
       <SearchBox
         value={search}
-        onChange={setSearch}
+        onChange={(v) => {
+          setSearch(v)
+          setPagina(1)
+        }}
         placeholder="Ej: polo negro"
         results={filtered.length}
         total={products.length}
       />
+
+      <div className="mt-3">
+        <FilterChips<OrdenInventario>
+          titulo="Ordenar"
+          valor={orden}
+          onChange={(v) => {
+            setOrden(v)
+            setPagina(1)
+          }}
+          opciones={OPCIONES_ORDEN}
+        />
+      </div>
 
       {inactiveCount > 0 && (
         <button
@@ -134,7 +177,7 @@ export default function Inventario() {
             }
           />
         )}
-        {filtered.map(({ product, variants, quantity }) => {
+        {paginaItems.map(({ product, variants, quantity }) => {
           const inactivo = !product.active || product.deleted
           const bajo = quantity <= product.stockMin
           return (
@@ -207,6 +250,8 @@ export default function Inventario() {
           )
         })}
       </div>
+
+      <Paginator pagina={paginaActual} totalPaginas={totalPaginas} onChange={setPagina} />
 
       <NewProductModal open={openNew} onClose={() => setOpenNew(false)} onCreated={() => show('Producto agregado')} />
 

@@ -4,18 +4,41 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
+import { FilterChips } from '../components/ui/FilterChips'
 import { HelpTooltip } from '../components/ui/HelpTooltip'
 import { Input } from '../components/ui/Input'
 import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
+import { Paginator } from '../components/ui/Paginator'
+import { SearchBox } from '../components/ui/SearchBox'
 import { useToast } from '../components/ui/ToastContext'
 import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
 import { voidSale } from '../services/sales'
+import { calcularPaginas, paginar } from '../utils/paginacion'
+import { rankMatches } from '../utils/search'
 import { round2 } from '../utils/money'
 import type { MovementReason, Sale, SaleItem } from '../types/models'
 
 type Tab = 'ventas' | 'movimientos' | 'cierres'
+type OrdenHistorial = 'recientes' | 'antiguos'
+
+/** Estado del filtro compartido por las 3 pestañas. */
+interface FiltroHistorialProps {
+  busqueda: string
+  onBusqueda: (v: string) => void
+  orden: OrdenHistorial
+  onOrden: (v: OrdenHistorial) => void
+  pagina: number
+  onPagina: (p: number) => void
+}
+
+/** Orden cronológico simple: recién pasó o lo más viejo primero. */
+function porFecha<T extends { createdAt: string }>(a: T, b: T, orden: OrdenHistorial): number {
+  return orden === 'recientes'
+    ? b.createdAt.localeCompare(a.createdAt)
+    : a.createdAt.localeCompare(b.createdAt)
+}
 
 const MOTIVOS_MOVIMIENTO: Record<MovementReason, string> = {
   entrada: 'Entrada de mercadería',
@@ -36,6 +59,26 @@ const METODOS: Record<Sale['paymentMethod'], string> = {
 
 export default function Historial() {
   const [tab, setTab] = useState<Tab>('ventas')
+  // El filtro vive arriba para que no se pierda al cambiar de pestaña.
+  // Cada cambio (búsqueda, orden o pestaña) vuelve siempre a la página 1.
+  const [busqueda, setBusqueda] = useState('')
+  const [orden, setOrden] = useState<OrdenHistorial>('recientes')
+  const [pagina, setPagina] = useState(1)
+
+  const filtro: FiltroHistorialProps = {
+    busqueda,
+    orden,
+    pagina,
+    onBusqueda: (v) => {
+      setBusqueda(v)
+      setPagina(1)
+    },
+    onOrden: (v) => {
+      setOrden(v)
+      setPagina(1)
+    },
+    onPagina: setPagina,
+  }
 
   return (
     <AppLayout title="Historial">
@@ -43,7 +86,10 @@ export default function Historial() {
         {(['ventas', 'movimientos', 'cierres'] as Tab[]).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => {
+              setTab(t)
+              setPagina(1)
+            }}
             className={`flex-1 rounded-xl border px-3 py-2 text-sm font-bold capitalize ${
               tab === t
                 ? 'border-line-active bg-selected text-label-active'
@@ -55,14 +101,64 @@ export default function Historial() {
         ))}
       </div>
 
-      {tab === 'ventas' && <SalesHistory />}
-      {tab === 'movimientos' && <MovementsHistory />}
-      {tab === 'cierres' && <ClosuresHistory />}
+      {tab === 'ventas' && <SalesHistory filtro={filtro} />}
+      {tab === 'movimientos' && <MovementsHistory filtro={filtro} />}
+      {tab === 'cierres' && <ClosuresHistory filtro={filtro} />}
     </AppLayout>
   )
 }
 
-function SalesHistory() {
+/** Buscador + chips "recientes / antiguos", idénticos en las 3 pestañas. */
+function FiltroHistorial({
+  filtro,
+  resultados,
+  total,
+  placeholder,
+}: {
+  filtro: FiltroHistorialProps
+  resultados: number
+  total: number
+  placeholder: string
+}) {
+  return (
+    <div className="mb-4 flex flex-col gap-3">
+      <SearchBox
+        value={filtro.busqueda}
+        onChange={filtro.onBusqueda}
+        results={resultados}
+        total={total}
+        placeholder={placeholder}
+      />
+      <FilterChips<OrdenHistorial>
+        titulo="Ordenar"
+        valor={filtro.orden}
+        onChange={filtro.onOrden}
+        opciones={[
+          { valor: 'recientes', etiqueta: 'Más recientes' },
+          { valor: 'antiguos', etiqueta: 'Más antiguos' },
+        ]}
+      />
+    </div>
+  )
+}
+
+/** Aviso cuando la búsqueda no trajo nada, con botón para borrarla. */
+function SinResultados({ busqueda, onBorrar }: { busqueda: string; onBorrar: () => void }) {
+  return (
+    <EmptyState
+      icon="🔍"
+      title={`No encontramos "${busqueda.trim()}"`}
+      description="Revisa la ortografía o intenta con otra palabra."
+      action={
+        <Button variant="secondary" size="md" onClick={onBorrar}>
+          Borrar búsqueda
+        </Button>
+      }
+    />
+  )
+}
+
+function SalesHistory({ filtro }: { filtro: FiltroHistorialProps }) {
   const { show } = useToast()
   const [anular, setAnular] = useState<Sale | null>(null)
   const [motivo, setMotivo] = useState('')
@@ -101,6 +197,24 @@ function SalesHistory() {
     else itemsBySale.set(item.saleId, [item])
   }
 
+  // Búsqueda por nombre de producto, método de pago, fecha o monto; después
+  // manda el orden elegido (recién pasó o lo más viejo primero).
+  const filtradas = rankMatches(sales, filtro.busqueda, (s) => {
+    const lineas = itemsBySale.get(s.id) ?? []
+    return [
+      ...lineas.map((l) => l.productName),
+      METODOS[s.paymentMethod] ?? s.paymentMethod,
+      s.date,
+      s.total.toFixed(2),
+      s.anuladaMotivo ?? '',
+    ]
+  })
+  filtradas.sort((a, b) => porFecha(a, b, filtro.orden))
+
+  const totalPaginas = calcularPaginas(filtradas.length)
+  const paginaActual = Math.min(filtro.pagina, totalPaginas)
+  const paginaItems = paginar(filtradas, paginaActual)
+
   async function confirmarAnulacion() {
     if (!anular) return
     setBusy(true)
@@ -117,8 +231,18 @@ function SalesHistory() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {sales.map((s) => {
+    <>
+      <FiltroHistorial
+        filtro={filtro}
+        resultados={filtradas.length}
+        total={sales.length}
+        placeholder="Ej: polo, efectivo, S/ 45"
+      />
+      {filtradas.length === 0 && (
+        <SinResultados busqueda={filtro.busqueda} onBorrar={() => filtro.onBusqueda('')} />
+      )}
+      <div className="flex flex-col gap-3">
+      {paginaItems.map((s) => {
         const lines = itemsBySale.get(s.id) ?? []
         const unidades = lines.reduce((n, l) => n + l.quantity, 0)
         return (
@@ -181,6 +305,8 @@ function SalesHistory() {
           </Card>
         )
       })}
+      <Paginator pagina={paginaActual} totalPaginas={totalPaginas} onChange={filtro.onPagina} />
+      </div>
 
       <Modal open={!!anular} title="Anular venta" onClose={() => setAnular(null)}>
         <div className="flex flex-col gap-3">
@@ -211,11 +337,11 @@ function SalesHistory() {
           </Button>
         </div>
       </Modal>
-    </div>
+    </>
   )
 }
 
-function MovementsHistory() {
+function MovementsHistory({ filtro }: { filtro: FiltroHistorialProps }) {
   const [state, retry] = useQueryState(() => db.inventoryMovements.reverse().sortBy('createdAt'), [])
 
   if (state.status === 'loading' && state.data === null) {
@@ -237,9 +363,31 @@ function MovementsHistory() {
     return <EmptyState icon="📦" title="Sin movimientos" description="Los movimientos de inventario aparecerán aquí." />
   }
 
+  // Búsqueda por producto, motivo o nota, y luego el orden elegido.
+  const filtrados = rankMatches(movements, filtro.busqueda, (m) => [
+    m.productName,
+    MOTIVOS_MOVIMIENTO[m.reason] ?? m.reason,
+    m.note ?? '',
+  ])
+  filtrados.sort((a, b) => porFecha(a, b, filtro.orden))
+
+  const totalPaginas = calcularPaginas(filtrados.length)
+  const paginaActual = Math.min(filtro.pagina, totalPaginas)
+  const paginaItems = paginar(filtrados, paginaActual)
+
   return (
-    <div className="flex flex-col gap-3">
-      {movements.map((m) => (
+    <>
+      <FiltroHistorial
+        filtro={filtro}
+        resultados={filtrados.length}
+        total={movements.length}
+        placeholder="Ej: polo, ajuste"
+      />
+      {filtrados.length === 0 && (
+        <SinResultados busqueda={filtro.busqueda} onBorrar={() => filtro.onBusqueda('')} />
+      )}
+      <div className="flex flex-col gap-3">
+      {paginaItems.map((m) => (
         <Card key={m.id}>
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -256,11 +404,13 @@ function MovementsHistory() {
           </div>
         </Card>
       ))}
-    </div>
+      <Paginator pagina={paginaActual} totalPaginas={totalPaginas} onChange={filtro.onPagina} />
+      </div>
+    </>
   )
 }
 
-function ClosuresHistory() {
+function ClosuresHistory({ filtro }: { filtro: FiltroHistorialProps }) {
   const [state, retry] = useQueryState(() => db.cashClosures.reverse().sortBy('createdAt'), [])
 
   if (state.status === 'loading' && state.data === null) {
@@ -282,9 +432,27 @@ function ClosuresHistory() {
     return <EmptyState icon="🗓️" title="Sin cierres" description="Los cierres de caja aparecerán aquí." />
   }
 
+  // Búsqueda por fecha, y luego el orden elegido.
+  const filtrados = rankMatches(closures, filtro.busqueda, (c) => [c.date])
+  filtrados.sort((a, b) => porFecha(a, b, filtro.orden))
+
+  const totalPaginas = calcularPaginas(filtrados.length)
+  const paginaActual = Math.min(filtro.pagina, totalPaginas)
+  const paginaItems = paginar(filtrados, paginaActual)
+
   return (
-    <div className="flex flex-col gap-3">
-      {closures.map((c) => {
+    <>
+      <FiltroHistorial
+        filtro={filtro}
+        resultados={filtrados.length}
+        total={closures.length}
+        placeholder="Ej: 2026-10-01"
+      />
+      {filtrados.length === 0 && (
+        <SinResultados busqueda={filtro.busqueda} onBorrar={() => filtro.onBusqueda('')} />
+      )}
+      <div className="flex flex-col gap-3">
+      {paginaItems.map((c) => {
         const totales: { id: Sale['paymentMethod']; valor: number }[] = [
           { id: 'efectivo', valor: c.totalCash },
           { id: 'yape', valor: c.totalYape },
@@ -350,6 +518,8 @@ function ClosuresHistory() {
           </Card>
         )
       })}
-    </div>
+      <Paginator pagina={paginaActual} totalPaginas={totalPaginas} onChange={filtro.onPagina} />
+      </div>
+    </>
   )
 }
