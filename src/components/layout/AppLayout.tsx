@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ConnectionStatus } from './ConnectionStatus'
 import { FondoNeon } from '../cyber/FondoNeon'
+import { Configuracion } from '../Configuracion'
 import { Tutorial } from '../Tutorial'
+import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { tutorialNoVisto } from '../tutorialStorage'
+import { leerPerfil, type Perfil } from '../../utils/perfil'
 
 function formatDate(d: Date) {
   const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
@@ -17,8 +19,12 @@ function formatTime(d: Date) {
 export function AppLayout({ title, children }: { title: string; children: ReactNode }) {
   const [now, setNow] = useState(new Date())
   // Solo la primera visita abre el tutorial; después se vuelve a ver desde el
-  // círculo del encabezado. La lectura es perezosa para no abrirlo dos veces.
+  // menú del círculo. La lectura es perezosa para no abrirlo dos veces.
   const [tutorial, setTutorial] = useState(() => tutorialNoVisto())
+  const [menu, setMenu] = useState(false)
+  const [config, setConfig] = useState(false)
+  const [perfil, setPerfil] = useState<Perfil>(() => leerPerfil())
+  const online = useOnlineStatus()
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000)
@@ -31,14 +37,60 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
       <header className="sticky top-0 z-30 border-b border-line bg-chrome px-4 py-3">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-title">{title}</h1>
-          <div className="flex items-center gap-2">
-            <ConnectionStatus />
+
+          <div className="relative">
             <button
               type="button"
-              onClick={() => setTutorial(true)}
-              aria-label="Ayuda: cómo usar esta app"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-accent-text/60 bg-accent/30 shadow-[0_0_6px_rgba(0,217,255,0.35)] transition-transform duration-150 active:scale-95"
+              onClick={() => setMenu(!menu)}
+              aria-label="Perfil y ayuda"
+              aria-expanded={menu}
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-2 border-accent-text/60 bg-accent/30 shadow-[0_0_6px_rgba(0,217,255,0.35)] transition-transform duration-150 active:scale-95"
+            >
+              {perfil.foto && <img src={perfil.foto} alt="" className="h-full w-full object-cover" />}
+            </button>
+
+            {/* Punto de estado pegado arriba a la derecha del círculo:
+                verde conectado, rojo si se quedó sin internet. */}
+            <span
+              aria-hidden="true"
+              className={`absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full ring-2 ring-chrome ${
+                online
+                  ? 'bg-success shadow-[0_0_6px_rgba(57,255,20,0.9)]'
+                  : 'bg-danger shadow-[0_0_6px_rgba(255,23,68,0.9)]'
+              }`}
             />
+
+            {menu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
+                <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-line-strong bg-raised p-2 shadow-2xl shadow-black/80">
+                  <div className="border-b border-line px-3 pb-2 pt-1">
+                    <p className="truncate text-sm font-bold text-title">{perfil.nombre || 'Mi perfil'}</p>
+                    <p className="truncate text-xs text-fg-mute">Blanca Tienda</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenu(false)
+                      setConfig(true)
+                    }}
+                    className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
+                  >
+                    <span aria-hidden="true">⚙️</span> Configuración
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenu(false)
+                      setTutorial(true)
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
+                  >
+                    <span aria-hidden="true">❓</span> Cómo usar esta app?
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
         <div className="mt-1 flex items-center justify-between text-xs text-fg-mute">
@@ -47,6 +99,14 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
         </div>
       </header>
       <main className="relative z-10 flex-1 px-4 pb-24 pt-4">{children}</main>
+
+      <Configuracion
+        key={config ? 'abierto' : 'cerrado'}
+        open={config}
+        perfil={perfil}
+        onClose={() => setConfig(false)}
+        onGuardar={setPerfil}
+      />
       <Tutorial open={tutorial} onClose={() => setTutorial(false)} />
     </div>
   )
