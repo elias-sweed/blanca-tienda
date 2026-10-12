@@ -5,7 +5,7 @@ const items = [
   { to: '/ventas', label: 'Ventas', icon: '🛒' },
   { to: '/inventario', label: 'Inventario', icon: '📦' },
   { to: '/caja', label: 'Caja', icon: '💰' },
-  { to: '/mas', label: 'Más', icon: '☰' },
+  { to: '/historial', label: 'Historial', icon: '📋' },
 ]
 
 export function BottomNav() {
