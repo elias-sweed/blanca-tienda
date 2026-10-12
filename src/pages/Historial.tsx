@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
+import { HelpTooltip } from '../components/ui/HelpTooltip'
 import { Input } from '../components/ui/Input'
 import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
@@ -170,9 +171,12 @@ function SalesHistory() {
             )}
 
             {!s.anulada && (
-              <Button variant="secondary" size="md" className="mt-3 w-full" onClick={() => setAnular(s)}>
-                Anular venta
-              </Button>
+              <div className="mt-3 flex items-center gap-2">
+                <Button variant="secondary" size="md" className="flex-1" onClick={() => setAnular(s)}>
+                  Anular venta
+                </Button>
+                <HelpTooltip text="Si te equivocaste, puedes anular la venta y el stock vuelve al inventario." />
+              </div>
             )}
           </Card>
         )

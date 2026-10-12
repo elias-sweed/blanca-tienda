@@ -1,12 +1,15 @@
 import type { InputHTMLAttributes } from 'react'
+import { HelpTooltip } from './HelpTooltip'
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label: string
   /** Validación en tiempo real: muestra el mensaje y marca el campo en rojo. */
   error?: string
+  /** Ayuda opcional: muestra un botón "?" al lado del título del campo. */
+  help?: string
 }
 
-export function Input({ label, error, className = '', id, ...props }: Props) {
+export function Input({ label, error, help, className = '', id, ...props }: Props) {
   const inputId = id ?? props.name ?? label
   return (
     <div className="flex flex-col gap-1">
@@ -15,6 +18,7 @@ export function Input({ label, error, className = '', id, ...props }: Props) {
         className="text-xs font-bold uppercase tracking-wider text-fg-mute"
       >
         {label}
+        {help && <HelpTooltip text={help} />}
       </label>
       <input
         id={inputId}

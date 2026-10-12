@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
+import { HelpTooltip } from '../components/ui/HelpTooltip'
 import { Input } from '../components/ui/Input'
 import { LoadingState } from '../components/ui/LoadingState'
 import { LowStockAlert } from '../components/ui/LowStockAlert'
@@ -140,6 +141,8 @@ export default function Ventas() {
     else acc.push({ category: cat, items: [item] })
     return acc
   }, [])
+
+  const cartMap = new Map(cart.map((item) => [item.variantId, item.quantity]))
 
   // Últimos productos válidos (se conservan aunque la consulta re-intente).
   const productsData = productsState.data
@@ -298,25 +301,33 @@ export default function Ventas() {
             <div key={category} className="mb-6 mt-4">
               <h2 className="mb-2 text-lg font-bold text-title">{category}</h2>
               <div className="grid grid-cols-2 gap-3">
-                {items.map(({ product, variant }) => (
-                  <Card key={variant.id} className="flex flex-col">
-                    <p className="font-bold">{product.name}</p>
-                    <p className="text-sm text-fg-mute">
-                      {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-ruby-text">S/ {product.price.toFixed(2)}</p>
-                    <p className={`text-xs ${variant.quantity <= 5 ? 'font-bold text-warning' : 'text-fg-mute'}`}>
-                      {variant.quantity} disponibles
-                    </p>
-                    <Button
-                      size="md"
-                      className="mt-2 w-full"
-                      onClick={() => handleAdd({ product, variant })}
-                    >
-                      Agregar
-                    </Button>
-                  </Card>
-                ))}
+                {items.map(({ product, variant }) => {
+                  const enCarrito = cartMap.get(variant.id)
+                  return (
+                    <Card key={variant.id} className="flex flex-col">
+                      <p className="font-bold">{product.name}</p>
+                      <p className="text-sm text-fg-mute">
+                        {[variant.size && `Talla: ${variant.size}`, variant.color && `Color: ${variant.color}`].filter(Boolean).join(' · ') || 'Sin talla/color'}
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-ruby-text">S/ {product.price.toFixed(2)}</p>
+                      <p className={`text-xs ${variant.quantity <= 5 ? 'font-bold text-warning' : 'text-fg-mute'}`}>
+                        {variant.quantity} disponibles
+                      </p>
+                      {enCarrito && (
+                        <p className="mt-1 text-xs font-bold text-cta-text">
+                          En carrito: {enCarrito}
+                        </p>
+                      )}
+                      <Button
+                        size="md"
+                        className="mt-2 w-full"
+                        onClick={() => handleAdd({ product, variant })}
+                      >
+                        Agregar
+                      </Button>
+                    </Card>
+                  )
+                })}
               </div>
             </div>
           ))}
@@ -665,7 +676,10 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
           </div>
 
           <div>
-            <p className="mb-1 text-sm font-semibold text-fg-soft">Método de pago</p>
+            <p className="mb-1 text-sm font-semibold text-fg-soft">
+              Método de pago
+              <HelpTooltip text="Elige cómo te pagó el cliente: efectivo, Yape, Plin u otro." />
+            </p>
             <div className="grid grid-cols-3 gap-2">
               {PAYMENTS.map((p) => (
                 <button
@@ -685,6 +699,7 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
 
           <Input
             label="Con cuánto paga (S/)"
+            help="Escribe cuánto te dio el cliente. Si es más que el total, te decimos el vuelto."
             type="text"
             inputMode="decimal"
             value={amountPaid}
@@ -852,7 +867,10 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
             </div>
 
             <div>
-              <p className="mb-1 text-sm font-semibold text-fg-soft">Método de pago</p>
+              <p className="mb-1 text-sm font-semibold text-fg-soft">
+                Método de pago
+                <HelpTooltip text="Elige cómo te pagó el cliente: efectivo, Yape, Plin u otro." />
+              </p>
               <div className="grid grid-cols-3 gap-2">
                 {PAYMENTS.map((p) => (
                   <button
@@ -872,6 +890,7 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
 
             <Input
               label="Con cuánto paga (S/)"
+              help="Escribe cuánto te dio el cliente. Si es más que el total, te decimos el vuelto."
               type="text"
               inputMode="decimal"
               value={amountPaid}

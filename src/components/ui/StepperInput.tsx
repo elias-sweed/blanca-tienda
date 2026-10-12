@@ -1,5 +1,4 @@
-import { useRef, useState } from 'react'
-import errorSound from '../../assets/Sounds/Error/Error.mp3'
+import { useState } from 'react'
 
 interface Props {
   label: string
@@ -26,7 +25,7 @@ interface Props {
 /**
  * Campo numérico para celular: abre el teclado de números y trae botones + y -
  * para no tener que escribir a mano. Si se teclea algo que no es número (salvo
- * el punto decimal), lo borra, suena la alarma y avisa con un toast.
+ * el punto decimal), lo borra y avisa con un mensaje en rojo, sin sonido.
  */
 export function StepperInput({
   label,
@@ -44,18 +43,10 @@ export function StepperInput({
 }: Props) {
   const inputId = id ?? label
   const [aviso, setAviso] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   function tocarError() {
     setAviso(true)
     window.setTimeout(() => setAviso(false), 2500)
-    try {
-      if (!audioRef.current) audioRef.current = new Audio(errorSound)
-      audioRef.current.currentTime = 0
-      audioRef.current.play().catch(() => {})
-    } catch {
-      // Si el navegador bloquea el audio, el aviso visual sigue funcionando.
-    }
     onInvalid?.()
   }
 
@@ -128,23 +119,23 @@ export function StepperInput({
             placeholder={placeholder}
             inputMode="decimal"
             autoComplete="off"
-            className={`w-full rounded-xl border bg-inset py-3 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition-colors duration-150 focus:ring-2 focus:outline-none ${
+            className={`w-full rounded-xl border bg-inset py-3 pr-10 text-base font-semibold text-fg placeholder:text-fg-mute/70 transition-colors duration-150 focus:ring-2 focus:outline-none ${
               prefix ? 'pl-9' : 'pl-4'
-            } ${value ? 'pr-10' : 'pr-3'} ${
+            } ${
               aviso ? 'border-danger ring-danger/40' : 'border-line focus:border-accent-text focus:ring-accent/40'
             }`}
           />
 
-          {value !== '' && (
-            <button
-              type="button"
-              onClick={limpiar}
-              aria-label="Borrar"
-              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-line-active/70 bg-gradient-to-b from-cta-hover to-cta text-base font-bold leading-none text-white shadow-[0_0_14px_rgba(0,245,255,0.4)] transition-transform duration-150 ease-out will-change-transform active:scale-90"
-            >
-              ×
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={limpiar}
+            aria-label="Borrar"
+            className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-line-active/70 bg-gradient-to-b from-cta-hover to-cta text-base font-bold leading-none text-white shadow-[0_0_14px_rgba(0,245,255,0.4)] transition-transform duration-150 ease-out will-change-transform active:scale-90 ${
+              value === '' ? 'opacity-40' : 'opacity-100'
+            }`}
+          >
+            ×
+          </button>
         </div>
 
         <button

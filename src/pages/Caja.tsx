@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
+import { HelpTooltip } from '../components/ui/HelpTooltip'
 import { Input } from '../components/ui/Input'
 import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
@@ -234,9 +235,12 @@ export default function Caja() {
             )}
           </div>
 
-          <Button variant="danger" size="lg" className="mt-6" onClick={() => setCloseModal(true)}>
-            Cerrar caja
-          </Button>
+          <div className="mt-6 flex items-center gap-2">
+            <Button variant="danger" size="lg" className="flex-1" onClick={() => setCloseModal(true)}>
+              Cerrar caja
+            </Button>
+            <HelpTooltip text="Al cerrar, se guarda todo lo que vendiste hoy. Después no puedes vender hasta abrir otra vez." />
+          </div>
         </>
       )}
 

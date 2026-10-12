@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
+import { HelpTooltip } from '../components/ui/HelpTooltip'
 import { Input } from '../components/ui/Input'
 import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
@@ -173,13 +174,14 @@ export default function Inventario() {
                           {v.quantity} {v.quantity === 1 ? 'unidad' : 'unidades'}
                         </p>
                       </div>
-                      <div className="flex shrink-0 gap-2">
+                      <div className="flex shrink-0 items-center gap-2">
                         <Button variant="secondary" size="md" onClick={() => setEntryFor(v)}>
                           + Stock
                         </Button>
                         <Button variant="ghost" size="md" onClick={() => setAdjustFor(v)}>
                           Ajustar
                         </Button>
+                        <HelpTooltip text="Úsalo si contaste los productos y la cantidad difiere de lo que dice la app." />
                       </div>
                     </div>
                   ))}
@@ -231,6 +233,7 @@ export default function Inventario() {
       />
 
       <EditProductModal
+        key={editFor?.id ?? 'sin-producto'}
         product={editFor}
         onClose={() => setEditFor(null)}
         onDone={() => {
@@ -606,27 +609,17 @@ function EditProductModal({ product, onClose, onDone }: {
   onDone: () => void
 }) {
   const { show } = useToast()
-  const [name, setName] = useState('')
-  const [price, setPrice] = useState('')
-  const [category, setCategory] = useState('')
+  // El componente se remonta con `key` (id del producto) al abrirse, así que
+  // el estado arranca con los datos reales sin necesidad de un efecto.
+  const [name, setName] = useState(product?.name ?? '')
+  const [price, setPrice] = useState(product ? product.price.toFixed(2) : '')
+  const [category, setCategory] = useState(product?.category ?? '')
   const [busy, setBusy] = useState(false)
 
   const nameCheck = validateName(name, 'el nombre')
   const priceCheck = validateAmount(price, 'el precio')
   const nameError = name !== '' && !nameCheck.ok ? nameCheck.error : null
   const priceError = price !== '' && !priceCheck.ok ? priceCheck.error : null
-
-  useEffect(() => {
-    if (product) {
-      setName(product.name)
-      setPrice(product.price.toFixed(2))
-      setCategory(product.category ?? '')
-    }
-  }, [product])
-
-  function reset() {
-    setName(''); setPrice(''); setCategory('')
-  }
 
   async function save() {
     if (busy || !product) return
@@ -643,7 +636,6 @@ function EditProductModal({ product, onClose, onDone }: {
         category,
       })
       onDone()
-      reset()
     } catch (e) {
       show(e instanceof Error ? e.message : 'No se pudo guardar', 'error')
     } finally {

@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { BottomNav } from './components/layout/BottomNav'
 import { Button } from './components/ui/Button'
-import { Card } from './components/ui/Card'
 import Inicio from './pages/Inicio'
 import Ventas from './pages/Ventas'
 import Inventario from './pages/Inventario'
