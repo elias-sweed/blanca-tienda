@@ -401,6 +401,7 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
   const [quantity, setQuantity] = useState('1')
   const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
   const [amountPaid, setAmountPaid] = useState('')
+  const [confirmarCerrar, setConfirmarCerrar] = useState(false)
   // Máquina de estados del pago: evita el doble toque y muestra el botón en
   // cada fase (Guardando / Listo / Intentar de nuevo).
   const [payment, dispatch] = useReducer(paymentReducer, IDLE_PAYMENT)
@@ -531,8 +532,19 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
   }
 
   function cerrar() {
+    if (drafts.length > 0) {
+      setConfirmarCerrar(true)
+      return
+    }
     dispatch({ type: 'RESET' })
     requestIdRef.current = null
+    onClose()
+  }
+
+  function confirmarCerrarSinGuardar() {
+    dispatch({ type: 'RESET' })
+    requestIdRef.current = null
+    setConfirmarCerrar(false)
     onClose()
   }
 
@@ -701,6 +713,22 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
       </div>
       </Modal>
 
+      <Modal open={confirmarCerrar} title="¿Salir sin guardar?" onClose={() => setConfirmarCerrar(false)}>
+        <div className="flex flex-col gap-3">
+          <p className="text-center text-sm text-fg-soft">
+            Tienes {drafts.length} {drafts.length === 1 ? 'producto' : 'productos'} sin guardar. Si sales ahora, se perderán.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="secondary" size="md" className="flex-1" onClick={() => setConfirmarCerrar(false)}>
+              Seguir editando
+            </Button>
+            <Button variant="danger" size="md" className="flex-1" onClick={confirmarCerrarSinGuardar}>
+              Salir sin guardar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {payment.status === 'success' && (
         <SuccessState message={payment.message ?? 'Listo'} onDone={cerrar} />
       )}
@@ -721,6 +749,7 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
   const { show } = useToast()
   const [method, setMethod] = useState<(typeof PAYMENTS)[number]['id']>('efectivo')
   const [amountPaid, setAmountPaid] = useState('')
+  const [confirmarEliminar, setConfirmarEliminar] = useState<string | null>(null)
   // Máquina de estados del pago: bloquea el doble toque y da feedback inmediato.
   const [payment, dispatch] = useReducer(paymentReducer, IDLE_PAYMENT)
   const inFlightRef = useRef(false)
@@ -800,7 +829,14 @@ function CartModal({ open, onClose, cart, total, onUpdateQty, onRemove, onClear,
                 <button onClick={() => onUpdateQty(item.variantId, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-raised font-bold text-accent-text transition-colors duration-150 hover:bg-accent/20">-</button>
                 <span className="w-8 text-center font-bold">{item.quantity}</span>
                 <button onClick={() => onUpdateQty(item.variantId, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-line-strong bg-raised font-bold text-accent-text transition-colors duration-150 hover:bg-accent/20">+</button>
-                <button onClick={() => onRemove(item.variantId)} className="ml-2 text-sm text-danger hover:underline">Eliminar</button>
+                {confirmarEliminar === item.variantId ? (
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => { onRemove(item.variantId); setConfirmarEliminar(null) }} className="text-xs font-bold text-danger hover:underline">Sí, quitar</button>
+                    <button onClick={() => setConfirmarEliminar(null)} className="text-xs text-fg-mute hover:underline">No</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmarEliminar(item.variantId)} className="ml-2 text-sm text-danger hover:underline">Eliminar</button>
+                )}
               </div>
             </div>
           </Card>

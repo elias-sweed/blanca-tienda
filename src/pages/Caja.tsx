@@ -29,6 +29,7 @@ export default function Caja() {
   const [resultado, setResultado] = useState<CierreResultado | null>(null)
   const [monto, setMonto] = useState('')
   const [montoError, setMontoError] = useState<string | null>(null)
+  const [confirmando, setConfirmando] = useState(false)
   const [busy, setBusy] = useState(false)
 
   // Estado explícito de la consulta: cargando / listo / error. Si falla la
@@ -239,7 +240,7 @@ export default function Caja() {
         </>
       )}
 
-      <Modal open={closeModal} title="Cerrar caja" onClose={() => setCloseModal(false)}>
+      <Modal open={closeModal} title="Cerrar caja" onClose={() => { setCloseModal(false); setConfirmando(false) }}>
         <div className="flex flex-col gap-3">
           <p className="text-center text-sm text-fg-mute">
             No necesitas contar nada. Solo dime cómo te fue con la gaveta.
@@ -255,6 +256,7 @@ export default function Caja() {
                 key={op.id}
                 onClick={() => {
                   setResultado(op.id)
+                  setConfirmando(false)
                   if (op.id === 'exacto') {
                     setMonto('')
                     setMontoError(null)
@@ -312,9 +314,25 @@ export default function Caja() {
             </div>
           )}
 
-          <Button size="lg" onClick={handleClose} disabled={busy || resultado === null || (resultado !== 'exacto' && montoError !== null)}>
-            Cerrar caja
-          </Button>
+          {confirmando ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-center text-sm text-fg-soft">
+                ¿Seguro que quieres cerrar la caja? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex gap-2">
+                <Button variant="secondary" size="md" className="flex-1" onClick={() => setConfirmando(false)}>
+                  Todavía no
+                </Button>
+                <Button variant="danger" size="md" className="flex-1" onClick={handleClose} disabled={busy || resultado === null || (resultado !== 'exacto' && montoError !== null)}>
+                  Sí, cerrar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button size="lg" onClick={() => setConfirmando(true)} disabled={busy || resultado === null || (resultado !== 'exacto' && montoError !== null)}>
+              Cerrar caja
+            </Button>
+          )}
         </div>
       </Modal>
 
