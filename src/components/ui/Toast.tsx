@@ -22,14 +22,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   // Contador incremental: `Date.now()` se repite si llegan dos avisos en el
   // mismo milisegundo y React choque con claves duplicadas.
   const seqRef = useRef(0)
-  const timersRef = useRef<number[]>([])
+  // Temporizador por aviso (no una lista suelta): al cerrar a mano se puede
+  // apagar el que corresponde.
+  const timersRef = useRef(new Map<number, number>())
 
   // Al desmontar se limpian los temporizadores: no queda ninguno huérfano
   // intentando actualizar un estado que ya no existe.
   useEffect(() => {
     const timers = timersRef.current
     return () => {
-      for (const timer of timers) window.clearTimeout(timer)
+      for (const timer of timers.values()) window.clearTimeout(timer)
     }
   }, [])
 
@@ -46,9 +48,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     )
 
     const timer = window.setTimeout(() => {
+      timersRef.current.delete(id)
       setToasts((prev) => prev.filter((t) => t.id !== id))
     }, DURATION)
-    timersRef.current.push(timer)
+    timersRef.current.set(id, timer)
+  }, [])
+
+  /** Cierre a mano: quita el aviso y apaga su temporizador. */
+  const cerrar = useCallback((id: number) => {
+    const timer = timersRef.current.get(id)
+    if (timer !== undefined) {
+      window.clearTimeout(timer)
+      timersRef.current.delete(id)
+    }
+    setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
   const colors: Record<ToastType, string> = {
@@ -78,12 +91,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`flex w-full max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 text-left font-semibold shadow-xl shadow-black/80 ${colors[t.type]}`}
+            className={`pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 text-left font-semibold shadow-xl shadow-black/80 ${colors[t.type]}`}
           >
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-sm font-bold">
               {icon[t.type]}
             </span>
             <span className="min-w-0 flex-1 text-sm">{t.message}</span>
+            <button
+              type="button"
+              onClick={() => cerrar(t.id)}
+              aria-label="Cerrar aviso"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current text-sm font-bold leading-none transition-transform duration-150 active:scale-90"
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>
