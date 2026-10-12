@@ -451,6 +451,9 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
     if (!validateForm()) return
     setDrafts([...drafts, { key: newId(), name: name.trim(), price, size, color, category, quantity }])
     clearForm()
+    // El formulario se pliega: para agregar otro hay que tocar "+ Producto
+    // nuevo" otra vez. Así el formulario vacío nunca interfiere al cobrar.
+    setFormOpen(false)
   }
 
   function copyLastDraft() {
@@ -475,6 +478,7 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
     if (!validateForm()) return
     setDrafts(drafts.map((d) => d.key === editingKey ? { ...d, name: name.trim(), price, size, color, category, quantity } : d))
     clearForm()
+    setFormOpen(false)
   }
 
   function removeDraft(key: string) {
@@ -491,7 +495,10 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
       show('Agrega al menos un producto', 'error')
       return
     }
-    if (!validateForm()) return
+    // Solo se valida el formulario si la persona está escribiendo o editando.
+    // Con el formulario vacío y cerrado, cobrar no debe exigir un nombre nuevo.
+    const formEnUso = editingKey !== null || name.trim() !== '' || price !== ''
+    if (formEnUso && !validateForm()) return
     if (!pago.ok) {
       show(pago.error, 'error')
       return
