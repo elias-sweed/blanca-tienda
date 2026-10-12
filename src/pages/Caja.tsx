@@ -28,6 +28,7 @@ export default function Caja() {
   const [closeModal, setCloseModal] = useState(false)
   const [resultado, setResultado] = useState<CierreResultado | null>(null)
   const [monto, setMonto] = useState('')
+  const [montoError, setMontoError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   // Estado explícito de la consulta: cargando / listo / error. Si falla la
@@ -66,6 +67,14 @@ export default function Caja() {
   // La caja abre en 0: lo esperado es solo el efectivo vendido hoy.
   const esperadoEnGaveta = porMetodo.efectivo
 
+  function validarMonto(valor: string): string | null {
+    if (valor === '') return null
+    const n = Number(valor)
+    if (!Number.isFinite(n) || n < 0) return 'Escribe solo números'
+    if (n === 0) return 'Escribe un monto mayor a cero'
+    return null
+  }
+
   async function handleOpen() {
     setBusy(true)
     try {
@@ -80,6 +89,13 @@ export default function Caja() {
 
   async function handleClose() {
     if (!resultado) return show('Elige cómo te fue con la caja', 'error')
+    if (resultado !== 'exacto') {
+      const error = validarMonto(monto)
+      if (error) {
+        setMontoError(error)
+        return show(error, 'error')
+      }
+    }
     setBusy(true)
     try {
       const closure = await closeCashRegister({ resultado, monto: Number(monto) || undefined })
@@ -92,6 +108,7 @@ export default function Caja() {
       setCloseModal(false)
       setResultado(null)
       setMonto('')
+      setMontoError(null)
     } catch (e) {
       show(e instanceof Error ? e.message : 'No se pudo cerrar la caja', 'error')
     } finally {
@@ -230,7 +247,7 @@ export default function Caja() {
 
           <div className="flex flex-col gap-2">
             {([
-              { id: 'exacto', label: 'Quadró exacto', emoji: '✅' },
+              { id: 'exacto', label: 'Cuadró exacto', emoji: '✅' },
               { id: 'sobro', label: 'Sobró dinero', emoji: '💰' },
               { id: 'falto', label: 'Faltó dinero', emoji: '❌' },
             ] as const).map((op) => (
@@ -238,7 +255,10 @@ export default function Caja() {
                 key={op.id}
                 onClick={() => {
                   setResultado(op.id)
-                  if (op.id === 'exacto') setMonto('')
+                  if (op.id === 'exacto') {
+                    setMonto('')
+                    setMontoError(null)
+                  }
                 }}
                 className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors duration-150 ${
                   resultado === op.id
@@ -260,8 +280,12 @@ export default function Caja() {
                 inputMode="decimal"
                 enterKeyHint="done"
                 value={monto}
-                onChange={(e) => setMonto(e.target.value)}
+                onChange={(e) => {
+                  setMonto(e.target.value)
+                  setMontoError(validarMonto(e.target.value))
+                }}
                 placeholder="Ej: 10.00"
+                error={montoError ?? undefined}
               />
               <p className="text-xs text-fg-mute">Solo si quieres anotarlo. No es obligatorio.</p>
             </div>
@@ -288,7 +312,7 @@ export default function Caja() {
             </div>
           )}
 
-          <Button size="lg" onClick={handleClose} disabled={busy || resultado === null}>
+          <Button size="lg" onClick={handleClose} disabled={busy || resultado === null || (resultado !== 'exacto' && montoError !== null)}>
             Cerrar caja
           </Button>
         </div>
