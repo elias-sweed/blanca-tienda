@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { usePWA } from './hooks/usePWA'
 import { BottomNav } from './components/layout/BottomNav'
 import { Button } from './components/ui/Button'
 import Compras from './pages/Compras'
@@ -25,6 +26,9 @@ function NotFound() {
 }
 
 export default function App() {
+  // Registra el service worker una sola vez al abrir la app.
+  usePWA()
+
   return (
     <BrowserRouter>
       <Routes>
