@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom'
+import { AuthGate } from './components/AuthGate'
 import { usePWA } from './hooks/usePWA'
 import { BottomNav } from './components/layout/BottomNav'
 import { Button } from './components/ui/Button'
@@ -9,6 +10,7 @@ import Inventario from './pages/Inventario'
 import Caja from './pages/Caja'
 import Mas from './pages/Mas'
 import Historial from './pages/Historial'
+import Login from './pages/Login'
 
 function NotFound() {
   return (
@@ -25,6 +27,25 @@ function NotFound() {
   )
 }
 
+/** Pantallas privadas: solo se ven con la sesión de Supabase iniciada. */
+function AppPrivada() {
+  return (
+    <AuthGate>
+      <Routes>
+        <Route path="/" element={<Inicio />} />
+        <Route path="/ventas" element={<Ventas />} />
+        <Route path="/inventario" element={<Inventario />} />
+        <Route path="/caja" element={<Caja />} />
+        <Route path="/compras" element={<Compras />} />
+        <Route path="/mas" element={<Mas />} />
+        <Route path="/historial" element={<Historial />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <BottomNav />
+    </AuthGate>
+  )
+}
+
 export default function App() {
   // Registra el service worker una sola vez al abrir la app.
   usePWA()
@@ -32,16 +53,18 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Inicio />} />
-      <Route path="/ventas" element={<Ventas />} />
-      <Route path="/inventario" element={<Inventario />} />
-      <Route path="/caja" element={<Caja />} />
-      <Route path="/compras" element={<Compras />} />
-        <Route path="/mas" element={<Mas />} />
-        <Route path="/historial" element={<Historial />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="/login" element={<Login />} />
+        {/* El enlace del correo deja la sesión lista; la app abre en Inicio. */}
+        <Route
+          path="/recuperar"
+          element={
+            <AuthGate>
+              <Navigate to="/" replace />
+            </AuthGate>
+          }
+        />
+        <Route path="/*" element={<AppPrivada />} />
       </Routes>
-      <BottomNav />
     </BrowserRouter>
   )
 }
