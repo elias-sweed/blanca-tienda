@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { FondoNeon } from './cyber/FondoNeon'
 import { LoadingState } from './ui/LoadingState'
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
+import { useAuth } from '../context/authContext'
 
 /**
  * Puerta de acceso a las pantallas privadas.
@@ -11,7 +11,7 @@ import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
  * Sin sesión se va a la pantalla de acceso. Con sesión, se muestra la app.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { estado, configurado } = useSupabaseAuth()
+  const { estadoSesion, configurado } = useAuth()
   const location = useLocation()
 
   if (!configurado) {
@@ -29,7 +29,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     )
   }
 
-  if (estado === 'cargando') {
+  if (estadoSesion === 'cargando') {
     return (
       <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
         <FondoNeon />
@@ -40,7 +40,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     )
   }
 
-  if (estado === 'sin-sesion') {
+  if (estadoSesion === 'sin-sesion') {
     return <Navigate to="/login" replace state={{ desde: location.pathname }} />
   }
 

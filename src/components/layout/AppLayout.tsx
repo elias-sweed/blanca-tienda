@@ -2,7 +2,10 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FondoNeon } from '../cyber/FondoNeon'
 import { Configuracion } from '../Configuracion'
+import { InvitacionBloqueo } from '../InvitacionBloqueo'
+import { SeguridadBloqueo } from '../SeguridadBloqueo'
 import { Tutorial } from '../Tutorial'
+import { useAuth } from '../../context/authContext'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { tutorialNoVisto } from '../tutorialStorage'
 import { leerPerfil, type Perfil } from '../../utils/perfil'
@@ -24,9 +27,11 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
   const [tutorial, setTutorial] = useState(() => tutorialNoVisto())
   const [menu, setMenu] = useState(false)
   const [config, setConfig] = useState(false)
+  const [seguridad, setSeguridad] = useState(false)
   const [perfil, setPerfil] = useState<Perfil>(() => leerPerfil())
   const online = useOnlineStatus()
   const navigate = useNavigate()
+  const { bloquear, cerrarSesion, bloqueoConfigurado } = useAuth()
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000)
@@ -82,6 +87,16 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
                     type="button"
                     onClick={() => {
                       setMenu(false)
+                      setSeguridad(true)
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
+                  >
+                    <span aria-hidden="true">🔐</span> Seguridad y bloqueo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenu(false)
                       setTutorial(true)
                     }}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
@@ -97,6 +112,30 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
                   >
                     <span aria-hidden="true">📋</span> Historial
+                  </button>
+                  <div className="my-1 border-t border-line" />
+                  {bloqueoConfigurado && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenu(false)
+                        bloquear()
+                      }}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
+                    >
+                      <span aria-hidden="true">🔒</span> Bloquear aplicación
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setMenu(false)
+                      await cerrarSesion()
+                      navigate('/login', { replace: true })
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-danger transition-colors duration-150 hover:bg-hover"
+                  >
+                    <span aria-hidden="true">🚪</span> Cerrar sesión
                   </button>
                 </div>
               </>
@@ -118,6 +157,8 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
         onGuardar={setPerfil}
       />
       <Tutorial open={tutorial} onClose={() => setTutorial(false)} />
+      <SeguridadBloqueo open={seguridad} onClose={() => setSeguridad(false)} />
+      <InvitacionBloqueo pausada={tutorial || config || seguridad} onConfigurar={() => setSeguridad(true)} />
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { FondoNeon } from '../components/cyber/FondoNeon'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { useToast } from '../components/ui/ToastContext'
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
+import { useAuth } from '../context/authContext'
 
 interface EstadoNavegacion {
   desde?: string
@@ -17,7 +17,7 @@ interface EstadoNavegacion {
  * Supabase. Aquí solo se escribe el correo y la contraseña.
  */
 export default function Login() {
-  const { iniciarSesion, recuperarContrasena, configurado } = useSupabaseAuth()
+  const { iniciarSesion, recuperarContrasena, configurado } = useAuth()
   const { show } = useToast()
   const navigate = useNavigate()
   const location = useLocation()

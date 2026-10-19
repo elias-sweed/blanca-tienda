@@ -91,6 +91,27 @@ export function useSupabaseAuth() {
     }
   }, [])
 
+  /**
+   * Comprueba la contraseña de la cuenta maestra sin registrarla en ningún
+   * sitio. Se usa como recuperación del bloqueo local: si el patrón se olvida,
+   * solo entra quien conoce la contraseña de Supabase.
+   */
+  const verificarContrasena = useCallback(async (contrasena: string): Promise<ResultadoAuth> => {
+    if (!supabase) return { ok: false, mensaje: 'Supabase no está configurado.' }
+    // Se lee la sesión local (sin pedir la contraseña guardada, que no existe).
+    const { data } = await supabase.auth.getSession()
+    const correo = data.session?.user.email
+    if (!correo) {
+      return {
+        ok: false,
+        mensaje: 'Tu sesión venció. Cierra sesión en este teléfono y vuelve a entrar.',
+      }
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email: correo, password: contrasena })
+    if (error) return { ok: false, mensaje: mensajeDeError(error.message) }
+    return { ok: true }
+  }, [])
+
   const recuperarContrasena = useCallback(async (correo: string): Promise<ResultadoAuth> => {
     if (!supabase) {
       return { ok: false, mensaje: 'Supabase no está configurado.' }
@@ -117,6 +138,7 @@ export function useSupabaseAuth() {
     iniciarSesion,
     cerrarSesion,
     recuperarContrasena,
+    verificarContrasena,
   }
 }
 

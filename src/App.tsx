@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom'
 import { AuthGate } from './components/AuthGate'
+import { LockGate } from './components/LockGate'
 import { usePWA } from './hooks/usePWA'
 import { BottomNav } from './components/layout/BottomNav'
 import { Button } from './components/ui/Button'
@@ -31,17 +32,19 @@ function NotFound() {
 function AppPrivada() {
   return (
     <AuthGate>
-      <Routes>
-        <Route path="/" element={<Inicio />} />
-        <Route path="/ventas" element={<Ventas />} />
-        <Route path="/inventario" element={<Inventario />} />
-        <Route path="/caja" element={<Caja />} />
-        <Route path="/compras" element={<Compras />} />
-        <Route path="/mas" element={<Mas />} />
-        <Route path="/historial" element={<Historial />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <BottomNav />
+      <LockGate>
+        <Routes>
+          <Route path="/" element={<Inicio />} />
+          <Route path="/ventas" element={<Ventas />} />
+          <Route path="/inventario" element={<Inventario />} />
+          <Route path="/caja" element={<Caja />} />
+          <Route path="/compras" element={<Compras />} />
+          <Route path="/mas" element={<Mas />} />
+          <Route path="/historial" element={<Historial />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <BottomNav />
+      </LockGate>
     </AuthGate>
   )
 }
