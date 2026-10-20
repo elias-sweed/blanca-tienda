@@ -11,6 +11,7 @@ import { LoadingState } from '../components/ui/LoadingState'
 import { LowStockAlert } from '../components/ui/LowStockAlert'
 import { Modal, Z_OVERLAY } from '../components/ui/Modal'
 import { Portal } from '../components/ui/Portal'
+import { QuickPicks } from '../components/ui/QuickPicks'
 import { SearchBox } from '../components/ui/SearchBox'
 import { SuccessState } from '../components/ui/SuccessState'
 import { useToast } from '../components/ui/ToastContext'
@@ -39,6 +40,7 @@ import {
   submitLabel,
 } from '../utils/payment'
 import { rankMatches } from '../utils/search'
+import { CATEGORIAS_SUGERIDAS, COLORES_SUGERIDOS } from '../utils/sugerencias'
 import { firstError, validateAmount, validateName, validateQuantity, validatePayment } from '../utils/validation'
 import beepSound from '../assets/Sounds/Warning/Beep.mp3'
 
@@ -661,7 +663,19 @@ function NewProductModal({ open, onClose, onNeedCash }: { open: boolean; onClose
                 <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="M" />
                 <Input label="Color (opcional)" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Negro" />
               </div>
+              <QuickPicks
+                etiqueta="Colores frecuentes"
+                opciones={COLORES_SUGERIDOS}
+                valor={color}
+                onElegir={setColor}
+              />
               <Input label="Categoría (opcional)" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ej: Polos" />
+              <QuickPicks
+                etiqueta="Categorías frecuentes"
+                opciones={CATEGORIAS_SUGERIDAS}
+                valor={category}
+                onElegir={setCategory}
+              />
               <div className="flex gap-2">
                 <Button variant="secondary" size="md" className="flex-1" onClick={editingKey ? updateDraft : addDraft}>
                   {editingKey ? 'Guardar cambios' : '+ Agregar producto'}

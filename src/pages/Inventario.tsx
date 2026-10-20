@@ -10,6 +10,7 @@ import { Input } from '../components/ui/Input'
 import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
 import { Paginator } from '../components/ui/Paginator'
+import { QuickPicks } from '../components/ui/QuickPicks'
 import { SearchBox } from '../components/ui/SearchBox'
 import { StepperInput } from '../components/ui/StepperInput'
 import { useToast } from '../components/ui/ToastContext'
@@ -20,6 +21,7 @@ import type { InventoryMovement, Product, ProductVariant } from '../types/models
 import { calcularPaginas, paginar } from '../utils/paginacion'
 import { formatearFechaCorta } from '../utils/compra'
 import { rankMatches } from '../utils/search'
+import { CATEGORIAS_SUGERIDAS, COLORES_SUGERIDOS } from '../utils/sugerencias'
 import { firstError, validateAmount, validateName, validateQuantity } from '../utils/validation'
 
 type OrdenInventario = 'az' | 'nuevos' | 'modificados'
@@ -373,6 +375,12 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
         </div>
 
         <Input label="Categoría (opcional)" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Polos" />
+        <QuickPicks
+          etiqueta="Categorías frecuentes"
+          opciones={CATEGORIAS_SUGERIDAS}
+          valor={category}
+          onElegir={setCategory}
+        />
 
         {/* Divulgación progresiva: lo esencial primero; tallas y colores se
             abren solo cuando hacen falta. */}
@@ -415,6 +423,12 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
                   <Input label="Talla" value={d.size} onChange={(e) => updateDraft(d.key, { size: e.target.value })} placeholder="M" />
                   <Input label="Color" value={d.color} onChange={(e) => updateDraft(d.key, { color: e.target.value })} placeholder="Negro" />
                 </div>
+                <QuickPicks
+                  etiqueta="Colores frecuentes"
+                  opciones={COLORES_SUGERIDOS}
+                  valor={d.color}
+                  onElegir={(valor) => updateDraft(d.key, { color: valor })}
+                />
                 <StepperInput
                   label="Cantidad inicial"
                   value={d.quantity}
@@ -579,6 +593,12 @@ function NewVariantModal({ product, onClose, onDone }: {
           <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="L" />
           <Input label="Color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Azul" />
         </div>
+        <QuickPicks
+          etiqueta="Colores frecuentes"
+          opciones={COLORES_SUGERIDOS}
+          valor={color}
+          onElegir={setColor}
+        />
         <Input
           label="Cantidad inicial"
           type="text"
@@ -659,6 +679,12 @@ function EditProductModal({ product, onClose, onDone }: {
         </div>
 
         <Input label="Categoría (opcional)" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Polos" />
+        <QuickPicks
+          etiqueta="Categorías frecuentes"
+          opciones={CATEGORIAS_SUGERIDAS}
+          valor={category}
+          onElegir={setCategory}
+        />
 
         <Button size="lg" onClick={save} disabled={busy}>
           {busy ? 'Guardando...' : 'Guardar cambios'}
