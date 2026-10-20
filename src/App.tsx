@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { AuthGate } from './components/AuthGate'
 import { LockGate } from './components/LockGate'
 import { usePWA } from './hooks/usePWA'
@@ -12,6 +12,7 @@ import Caja from './pages/Caja'
 import Mas from './pages/Mas'
 import Historial from './pages/Historial'
 import Login from './pages/Login'
+import Recuperar from './pages/Recuperar'
 
 function NotFound() {
   return (
@@ -57,15 +58,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        {/* El enlace del correo deja la sesión lista; la app abre en Inicio. */}
-        <Route
-          path="/recuperar"
-          element={
-            <AuthGate>
-              <Navigate to="/" replace />
-            </AuthGate>
-          }
-        />
+        {/* El enlace del correo deja la sesión lista; esta pantalla confirma. */}
+        <Route path="/recuperar" element={<Recuperar />} />
         <Route path="/*" element={<AppPrivada />} />
       </Routes>
     </BrowserRouter>

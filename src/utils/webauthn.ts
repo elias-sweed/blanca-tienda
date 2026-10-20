@@ -11,9 +11,14 @@ export function biometriaSoportada(): boolean {
   return typeof window !== 'undefined' && 'PublicKeyCredential' in window
 }
 
+/** WebAuthn solo existe en direcciones seguras: https o localhost. */
+export function contextoSeguro(): boolean {
+  return typeof window !== 'undefined' && window.isSecureContext
+}
+
 /** ¿Este teléfono/navegador puede verificar con huella o rostro? */
 export async function biometriaDisponible(): Promise<boolean> {
-  if (!biometriaSoportada()) return false
+  if (!biometriaSoportada() || !contextoSeguro()) return false
   try {
     if (typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable !== 'function') {
       return false

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/authContext'
-import { biometriaDisponible } from '../utils/webauthn'
+import { biometriaDisponible, contextoSeguro } from '../utils/webauthn'
 import { Button } from './ui/Button'
 import { FilterChips } from './ui/FilterChips'
 import { Modal } from './ui/Modal'
@@ -199,7 +199,9 @@ export function SeguridadBloqueo({ open, onClose }: Props) {
               </>
             ) : (
               <p className="text-sm text-fg-mute">
-                Este teléfono o navegador no ofrece huella. Puedes usar el patrón.
+                {contextoSeguro()
+                  ? 'Este teléfono o navegador no ofrece huella. Puedes usar el patrón.'
+                  : 'La huella solo funciona con una dirección segura (https). Abre la app desde su enlace oficial; si no, usa el patrón.'}
               </p>
             )}
           </section>
@@ -217,8 +219,10 @@ export function SeguridadBloqueo({ open, onClose }: Props) {
           </section>
 
           <p className="rounded-xl border border-line bg-inset px-3 py-2 text-xs text-fg-mute">
-            El patrón es una barrera para el uso diario. No protege si alguien tiene acceso técnico
-            al teléfono. Tus datos siguen protegidos por tu cuenta de Supabase.
+            El patrón es una barrera para el uso diario: no cifra lo guardado en el teléfono ni
+            protege de alguien con acceso técnico. El bloqueo al cambiar de app tiene 3 segundos de
+            margen y puede no activarse si el navegador cierra la app de golpe. La huella queda
+            guardada en este teléfono y solo sirve en esta misma dirección de la app.
           </p>
 
           {error && (

@@ -35,6 +35,9 @@ function mensajeDeError(mensaje: string): string {
 export function useSupabaseAuth() {
   const [sesion, setSesion] = useState<Session | null>(null)
   const [cargando, setCargando] = useState(supabaseConfigurado)
+  // Se activa cuando la persona vuelve desde el enlace del correo de
+  // recuperación. Sirve para restablecer también el bloqueo local.
+  const [recuperacion, setRecuperacion] = useState(false)
 
   useEffect(() => {
     if (!supabase) return
@@ -50,8 +53,9 @@ export function useSupabaseAuth() {
       setCargando(false)
     })
 
-    const { data } = supabase.auth.onAuthStateChange((_evento, nuevaSesion) => {
+    const { data } = supabase.auth.onAuthStateChange((evento, nuevaSesion) => {
       if (!activo) return
+      if (evento === 'PASSWORD_RECOVERY') setRecuperacion(true)
       setSesion(nuevaSesion)
       setCargando(false)
     })
@@ -112,6 +116,8 @@ export function useSupabaseAuth() {
     return { ok: true }
   }, [])
 
+  const limpiarRecuperacion = useCallback(() => setRecuperacion(false), [])
+
   const recuperarContrasena = useCallback(async (correo: string): Promise<ResultadoAuth> => {
     if (!supabase) {
       return { ok: false, mensaje: 'Supabase no está configurado.' }
@@ -139,6 +145,8 @@ export function useSupabaseAuth() {
     cerrarSesion,
     recuperarContrasena,
     verificarContrasena,
+    recuperacion,
+    limpiarRecuperacion,
   }
 }
 

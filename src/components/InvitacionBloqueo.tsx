@@ -1,17 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '../context/authContext'
+import { invitacionVista, marcarInvitacionVista } from '../utils/recuperacion'
 import { Modal } from './ui/Modal'
 import { Button } from './ui/Button'
-
-const CLAVE = 'bloqueo-invitacion-vista'
-
-function yaVista(): boolean {
-  try {
-    return localStorage.getItem(CLAVE) === '1'
-  } catch {
-    return true
-  }
-}
 
 /**
  * Después de entrar, ofrece una vez proteger la app. Si la persona dice
@@ -26,16 +17,12 @@ export function InvitacionBloqueo({
   pausada?: boolean
 }) {
   const { estadoBloqueo, bloqueoConfigurado } = useAuth()
-  const [oculta, setOculta] = useState(yaVista)
+  const [oculta, setOculta] = useState(invitacionVista)
 
   const visible = !oculta && !pausada && estadoBloqueo === 'sin-bloqueo' && !bloqueoConfigurado
 
   function cerrar() {
-    try {
-      localStorage.setItem(CLAVE, '1')
-    } catch {
-      // Sin almacenamiento: se oculta solo en esta sesión.
-    }
+    marcarInvitacionVista()
     setOculta(true)
   }
 

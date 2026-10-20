@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/authContext'
 import { verificarPatron } from '../utils/crypto'
+import { pedirRecuperacion } from '../utils/recuperacion'
 import { verificarBiometria } from '../utils/webauthn'
 import { FondoNeon } from './cyber/FondoNeon'
 import { PatronLock } from './PatronLock'
@@ -113,6 +114,13 @@ export function LockScreen() {
     navigate('/login', { replace: true })
   }
 
+  /** Recuperación: exige volver a entrar con la cuenta de Supabase. */
+  async function recuperarAcceso() {
+    pedirRecuperacion()
+    await cerrarSesion()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <div className="fixed inset-0 z-[200] overflow-y-auto bg-bg">
       <FondoNeon />
@@ -159,8 +167,11 @@ export function LockScreen() {
             <Button variant="secondary" size="lg" onClick={() => setModo('contrasena')}>
               Usar contraseña
             </Button>
+            <Button variant="ghost" size="lg" onClick={recuperarAcceso}>
+              ¿Olvidaste tu patrón o huella?
+            </Button>
             <p className="text-center text-xs text-fg-mute">
-              ¿Olvidaste el patrón? Usa tu contraseña de Supabase para recuperar el acceso.
+              Para recuperar el acceso se te pedirá entrar otra vez con tu cuenta de Supabase.
             </p>
           </>
         ) : (
@@ -207,6 +218,10 @@ export function LockScreen() {
         >
           Cerrar sesión en este teléfono
         </button>
+
+        <p className="text-center text-[11px] leading-snug text-fg-mute">
+          Este bloqueo evita miradas casuales. No cifra la información guardada en el teléfono.
+        </p>
       </div>
     </div>
   )
