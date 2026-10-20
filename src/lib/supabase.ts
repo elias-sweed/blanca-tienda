@@ -32,9 +32,7 @@ export const supabase: SupabaseClient | null = supabaseConfigurado
 
 export function requerirSupabase(): SupabaseClient {
   if (!supabase) {
-    throw new Error(
-      'Falta conectar Supabase. Revisa el archivo .env.local y vuelve a iniciar la app.',
-    )
+    throw new Error('La nube no está conectada.')
   }
   return supabase
 }

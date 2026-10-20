@@ -158,7 +158,7 @@ export async function addVariant(productId: string, input: ProductVariantInput) 
     const color = input.color?.trim() || undefined
     const existing = await db.productVariants.where('productId').equals(productId).toArray()
     const duplicate = existing.find((v) => (v.size ?? '') === (size ?? '') && (v.color ?? '') === (color ?? ''))
-    if (duplicate) throw new Error('Ya existe una variante con esa talla y color')
+    if (duplicate) throw new Error('Ese producto ya tiene esa talla y color')
 
     const variant = variantFrom(input, productId, now)
     await db.productVariants.add(variant)

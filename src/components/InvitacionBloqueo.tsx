@@ -34,7 +34,7 @@ export function InvitacionBloqueo({
           desbloqueo con tu huella o con un patrón.
         </p>
         <p className="text-xs text-fg-mute">
-          Es una barrera para el día a día. Tus datos siguen protegidos por tu cuenta de Supabase.
+          Es una barrera para el día a día. Tus datos siguen protegidos por tu cuenta.
         </p>
         <Button
           size="lg"

@@ -139,7 +139,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
                     }}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
                   >
-                    <span aria-hidden="true">❓</span> Cómo usar esta app?
+                    <span aria-hidden="true">❓</span> ¿Cómo usar esta app?
                   </button>
                   <button
                     type="button"
@@ -161,7 +161,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
                       }}
                       className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-fg transition-colors duration-150 hover:bg-hover"
                     >
-                      <span aria-hidden="true">🔒</span> Bloquear aplicación
+                      <span aria-hidden="true">🔒</span> Bloquear la app
                     </button>
                   )}
                   <button
@@ -173,7 +173,7 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
                     }}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-sm font-semibold text-danger transition-colors duration-150 hover:bg-hover"
                   >
-                    <span aria-hidden="true">🚪</span> Cerrar sesión
+                    <span aria-hidden="true">🚪</span> Salir de mi cuenta
                   </button>
                 </div>
               </>

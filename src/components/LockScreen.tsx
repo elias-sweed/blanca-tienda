@@ -114,7 +114,7 @@ export function LockScreen() {
     navigate('/login', { replace: true })
   }
 
-  /** Recuperación: exige volver a entrar con la cuenta de Supabase. */
+  /** Recuperación: exige volver a entrar con tu cuenta. */
   async function recuperarAcceso() {
     pedirRecuperacion()
     await cerrarSesion()
@@ -171,7 +171,7 @@ export function LockScreen() {
               ¿Olvidaste tu patrón o huella?
             </Button>
             <p className="text-center text-xs text-fg-mute">
-              Para recuperar el acceso se te pedirá entrar otra vez con tu cuenta de Supabase.
+              Para recuperar el acceso se te pedirá entrar otra vez con tu cuenta.
             </p>
           </>
         ) : (
@@ -216,11 +216,11 @@ export function LockScreen() {
           onClick={salir}
           className="mx-auto mt-2 rounded-xl px-4 py-3 text-sm font-bold text-fg-mute transition-colors duration-150 hover:bg-hover"
         >
-          Cerrar sesión en este teléfono
+          Salir de mi cuenta en este teléfono
         </button>
 
         <p className="text-center text-[11px] leading-snug text-fg-mute">
-          Este bloqueo evita miradas casuales. No cifra la información guardada en el teléfono.
+          Este bloqueo evita miradas casuales, pero no protege la información guardada en el teléfono.
         </p>
       </div>
     </div>

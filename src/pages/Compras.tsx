@@ -537,7 +537,7 @@ function NuevaCompraModal({ open, onClose }: { open: boolean; onClose: () => voi
     setBusy(true)
     try {
       await confirmarCompra(input, pago)
-      show('Compra registrada y stock sumado')
+      show('Compra guardada y unidades sumadas')
       cerrar()
     } catch (e) {
       show(e instanceof Error ? e.message : 'No se pudo registrar', 'error')

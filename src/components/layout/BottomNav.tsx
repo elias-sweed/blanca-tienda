@@ -25,7 +25,7 @@ export function BottomNav() {
               key={item.to}
               to={item.to}
               end={item.to === '/'}
-              aria-label={aviso ? `${item.label}, ${bajos} con stock bajo` : undefined}
+              aria-label={aviso ? `${item.label}, ${bajos} con pocas unidades` : undefined}
               className={({ isActive }) =>
                 `flex flex-1 flex-col items-center gap-0.5 border-t-2 py-2 text-xs transition-colors duration-150 ${
                   isActive

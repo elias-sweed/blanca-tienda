@@ -20,7 +20,7 @@ async function pendientesDeSubir(def: DefinicionTabla): Promise<RegistroLocal[]>
 }
 
 async function bajarTabla(def: DefinicionTabla): Promise<number> {
-  if (!supabase) throw new Error('La nube no está configurada.')
+  if (!supabase) throw new Error('La nube no está conectada.')
 
   const tabla = tablaLocal(def)
   const meta = await db.syncMeta.get(def.local)
@@ -39,7 +39,10 @@ async function bajarTabla(def: DefinicionTabla): Promise<number> {
     if (desde) consulta = consulta.gt('updated_at', desde)
 
     const { data, error } = await consulta
-    if (error) throw new Error(`No se pudo leer ${def.remota}: ${error.message}`)
+    if (error) {
+      console.error(`No se pudo leer ${def.remota}:`, error.message)
+      throw new Error('No se pudieron leer los datos de la nube.')
+    }
 
     const filas = (data ?? []) as FilaRemota[]
     if (filas.length === 0) break
@@ -81,7 +84,7 @@ async function bajarTabla(def: DefinicionTabla): Promise<number> {
 }
 
 async function subirTabla(def: DefinicionTabla, userId: string): Promise<number> {
-  if (!supabase) throw new Error('La nube no está configurada.')
+  if (!supabase) throw new Error('La nube no está conectada.')
 
   const tabla = tablaLocal(def)
   const pendientes = await pendientesDeSubir(def)
@@ -92,7 +95,10 @@ async function subirTabla(def: DefinicionTabla, userId: string): Promise<number>
     const filas = lote.map((registro) => def.aRemoto(registro, userId))
 
     const { error } = await supabase.from(def.remota).upsert(filas, { onConflict: 'id' })
-    if (error) throw new Error(`No se pudo guardar ${def.remota}: ${error.message}`)
+    if (error) {
+      console.error(`No se pudo guardar ${def.remota}:`, error.message)
+      throw new Error('No se pudieron guardar los datos en la nube.')
+    }
 
     // Solo se marca como guardado si nadie lo volvió a modificar mientras
     // viajaba la petición. Si cambió, sigue pendiente para la próxima vuelta.
@@ -116,7 +122,7 @@ async function subirTabla(def: DefinicionTabla, userId: string): Promise<number>
  * evita pisar en Supabase un dato más nuevo con uno viejo del teléfono.
  */
 export async function sincronizar(userId: string): Promise<ResultadoSync> {
-  if (!supabase) throw new Error('La nube no está configurada.')
+  if (!supabase) throw new Error('La nube no está conectada.')
 
   let bajados = 0
   for (const def of TABLAS) bajados += await bajarTabla(def)

@@ -60,7 +60,7 @@ export default function Login() {
     const res = await iniciarSesion(correo, contrasena)
     setOcupado(false)
     if (!res.ok) {
-      setError(res.mensaje ?? 'No pudimos iniciar sesión.')
+      setError(res.mensaje ?? 'No pudimos entrar.')
       return
     }
     const destino = (location.state as EstadoNavegacion | null)?.desde ?? '/'
@@ -90,9 +90,9 @@ export default function Login() {
       <div className="relative flex min-h-dvh flex-col overflow-y-auto">
         <FondoNeon />
         <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-5 py-8 text-center">
-          <h1 className="text-xl font-bold text-title">Falta conectar la nube</h1>
+          <h1 className="text-xl font-bold text-title">La app no está lista</h1>
           <p className="text-sm text-fg-mute">
-            Pide que se revise la configuración del acceso. Mientras tanto, no se puede entrar.
+            Pide ayuda para terminar de preparar la app. Mientras tanto, no se puede entrar.
           </p>
         </div>
       </div>

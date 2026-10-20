@@ -69,7 +69,7 @@ export function useSupabaseAuth() {
   const iniciarSesion = useCallback(
     async (correo: string, contrasena: string): Promise<ResultadoAuth> => {
       if (!supabase) {
-        return { ok: false, mensaje: 'Supabase no está configurado.' }
+        return { ok: false, mensaje: 'La nube no está conectada.' }
       }
       const { error } = await supabase.auth.signInWithPassword({
         email: correo.trim(),
@@ -91,7 +91,7 @@ export function useSupabaseAuth() {
     await supabase.auth.signOut({ scope: 'local' })
     return {
       ok: true,
-      mensaje: 'Se cerró la sesión en este teléfono. Se cerrará del todo al volver la conexión.',
+      mensaje: 'Se cerró tu cuenta en este teléfono. Se cerrará del todo al volver la conexión.',
     }
   }, [])
 
@@ -101,14 +101,14 @@ export function useSupabaseAuth() {
    * solo entra quien conoce la contraseña de Supabase.
    */
   const verificarContrasena = useCallback(async (contrasena: string): Promise<ResultadoAuth> => {
-    if (!supabase) return { ok: false, mensaje: 'Supabase no está configurado.' }
+    if (!supabase) return { ok: false, mensaje: 'La nube no está conectada.' }
     // Se lee la sesión local (sin pedir la contraseña guardada, que no existe).
     const { data } = await supabase.auth.getSession()
     const correo = data.session?.user.email
     if (!correo) {
       return {
         ok: false,
-        mensaje: 'Tu sesión venció. Cierra sesión en este teléfono y vuelve a entrar.',
+        mensaje: 'Tu acceso venció. Sal de tu cuenta en este teléfono y vuelve a entrar.',
       }
     }
     const { error } = await supabase.auth.signInWithPassword({ email: correo, password: contrasena })
@@ -120,7 +120,7 @@ export function useSupabaseAuth() {
 
   const recuperarContrasena = useCallback(async (correo: string): Promise<ResultadoAuth> => {
     if (!supabase) {
-      return { ok: false, mensaje: 'Supabase no está configurado.' }
+      return { ok: false, mensaje: 'La nube no está conectada.' }
     }
     const { error } = await supabase.auth.resetPasswordForEmail(correo.trim(), {
       redirectTo: `${window.location.origin}/recuperar`,

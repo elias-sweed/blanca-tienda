@@ -196,7 +196,7 @@ export default function Inventario() {
                 <div className="min-w-0">
                   <p className="text-lg font-bold">{product.name}</p>
                   <p className="text-sm text-fg-mute">
-                    {variants.length > 0 ? `${variants.length} ${variants.length === 1 ? 'variante' : 'variantes'}` : 'Sin variantes'}
+                    {variants.length > 0 ? `${variants.length} ${variants.length === 1 ? 'talla o color' : 'tallas o colores'}` : 'Sin tallas ni colores'}
                     {product.category ? ` · ${product.category}` : ''}
                   </p>
                 </div>
@@ -215,9 +215,9 @@ export default function Inventario() {
                     {bajo ? (
                       <span className="text-danger">Quedan pocas</span>
                     ) : (
-                      <span className="text-fg-mute">Al menos {product.stockMin}</span>
+                      <span className="text-fg-mute">Aviso con {product.stockMin} o menos</span>
                     )}
-                    <HelpTooltip text="Es la cantidad mínima que quieres tener. Si llegas a quedarte con menos, te avisamos en Inicio y en Ventas." />
+                    <HelpTooltip text="Es la cantidad desde la que quieres que te avisemos. Si quedan esas unidades o menos, te avisamos en Inicio y en Ventas." />
                   </span>
                 )}
               </div>
@@ -275,7 +275,7 @@ export default function Inventario() {
         product={variantFor}
         onClose={() => setVariantFor(null)}
         onDone={() => {
-          show('Variante agregada')
+          show('Se agregó la talla o color')
           setVariantFor(null)
         }}
       />
@@ -395,7 +395,7 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
               Tallas y colores
               {!variantsOpen && (
                 <span className="ml-2 text-xs font-semibold text-fg-mute">
-                  {drafts.length > 1 ? `${drafts.length} variantes` : 'opcional'}
+                  {drafts.length > 1 ? `${drafts.length} opciones` : 'opcional'}
                 </span>
               )}
             </span>
@@ -407,7 +407,7 @@ function NewProductModal({ open, onClose, onCreated }: { open: boolean; onClose:
           {variantsOpen && (
           <div className="flex flex-col gap-2 p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-fg-soft">Filas de talla/color</span>
+              <span className="text-sm font-semibold text-fg-soft">Cada talla o color</span>
               <button
                 onClick={() => setDrafts((ds) => [...ds, newDraft()])}
                 className="text-sm font-bold text-accent-text transition-colors duration-150 hover:text-accent"
@@ -580,7 +580,7 @@ function NewVariantModal({ product, onClose, onDone }: {
       onDone()
       setSize(''); setColor(''); setQty('0')
     } catch (e) {
-      show(e instanceof Error ? e.message : 'No se pudo agregar la variante', 'error')
+      show(e instanceof Error ? e.message : 'No se pudo agregar la talla o color', 'error')
     } finally {
       setBusy(false)
     }
@@ -607,7 +607,7 @@ function NewVariantModal({ product, onClose, onDone }: {
           value={qty}
           onChange={(e) => setQty(e.target.value)}
         />
-        <Button size="lg" onClick={save} disabled={busy}>Agregar variante</Button>
+        <Button size="lg" onClick={save} disabled={busy}>Agregar talla o color</Button>
       </div>
     </Modal>
   )

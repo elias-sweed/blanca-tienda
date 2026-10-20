@@ -200,8 +200,8 @@ export function SeguridadBloqueo({ open, onClose }: Props) {
             ) : (
               <p className="text-sm text-fg-mute">
                 {contextoSeguro()
-                  ? 'Este teléfono o navegador no ofrece huella. Puedes usar el patrón.'
-                  : 'La huella solo funciona con una dirección segura (https). Abre la app desde su enlace oficial; si no, usa el patrón.'}
+                  ? 'Este aparato no tiene huella disponible. Puedes usar el patrón.'
+                  : 'La huella solo funciona con una conexión segura. Abre la app desde su enlace oficial; si no, usa el patrón.'}
               </p>
             )}
           </section>
@@ -214,15 +214,15 @@ export function SeguridadBloqueo({ open, onClose }: Props) {
               onChange={cambiarInactividad}
             />
             <p className="text-xs text-fg-mute">
-              También se bloquea al salir de la app, cambiar de pestaña o recargar.
+              También se bloquea al salir de la app, cambiar a otra app o recargar.
             </p>
           </section>
 
           <p className="rounded-xl border border-line bg-inset px-3 py-2 text-xs text-fg-mute">
-            El patrón es una barrera para el uso diario: no cifra lo guardado en el teléfono ni
-            protege de alguien con acceso técnico. El bloqueo al cambiar de app tiene 3 segundos de
-            margen y puede no activarse si el navegador cierra la app de golpe. La huella queda
-            guardada en este teléfono y solo sirve en esta misma dirección de la app.
+            El patrón es una barrera para el uso diario: no protege la información guardada en el
+            teléfono de alguien que sepa de tecnología. El bloqueo al cambiar de app tiene 3 segundos
+            de margen y puede no activarse si el teléfono cierra la app de golpe. La huella queda
+            guardada en este teléfono y solo sirve en este mismo enlace de la app.
           </p>
 
           {error && (

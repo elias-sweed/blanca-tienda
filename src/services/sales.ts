@@ -263,7 +263,7 @@ async function resolveLines(lines: SaleLineInput[]): Promise<ResolvedLine[]> {
     if (!product) throw new Error('Producto no encontrado')
     if (!product.active || product.deleted) throw new Error(`"${product.name}" ya no está disponible`)
     if (variant.quantity < quantity) {
-      throw new Error(`No hay suficiente stock de "${product.name}" (disponibles: ${variant.quantity})`)
+      throw new Error(`No hay suficientes unidades de "${product.name}" (quedan: ${variant.quantity})`)
     }
     resolved.push({ product, variant, quantity, isNew: false })
   }

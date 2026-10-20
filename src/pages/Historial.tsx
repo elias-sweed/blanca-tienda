@@ -222,7 +222,7 @@ function SalesHistory({ filtro }: { filtro: FiltroHistorialProps }) {
     setBusy(true)
     try {
       await voidSale(anular.id, motivo)
-      show('Venta anulada y stock devuelto')
+      show('Venta anulada y unidades devueltas')
       setAnular(null)
       setMotivo('')
     } catch (e) {
@@ -324,7 +324,7 @@ function SalesHistory({ filtro }: { filtro: FiltroHistorialProps }) {
           </div>
 
           <p className="text-sm text-fg-mute">
-            Se devolverá al inventario el stock de todos los productos de esta venta y quedará registrada como anulada.
+            Volverán al inventario todas las unidades de esta venta y quedará registrada como anulada.
           </p>
 
           <Input
