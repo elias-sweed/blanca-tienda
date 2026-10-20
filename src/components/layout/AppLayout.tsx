@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FondoNeon } from '../cyber/FondoNeon'
+import { AvisosPWA } from '../AvisosPWA'
 import { Configuracion } from '../Configuracion'
 import { InvitacionBloqueo } from '../InvitacionBloqueo'
 import { SeguridadBloqueo } from '../SeguridadBloqueo'
@@ -148,6 +149,8 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
         </div>
       </header>
       <main className="relative z-10 flex-1 px-4 pb-24 pt-4">{children}</main>
+
+      <AvisosPWA />
 
       <Configuracion
         key={config ? 'abierto' : 'cerrado'}

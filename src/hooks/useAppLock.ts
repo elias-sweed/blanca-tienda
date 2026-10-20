@@ -127,14 +127,23 @@ export function useAppLock() {
 
   // Bloqueo al salir de la app / cambiar de pestaña, con 3 s de gracia para
   // no bloquear por un aviso momentáneo del navegador.
+  //
+  // Se guarda también la hora en que se ocultó: si el navegador congela los
+  // temporizadores en segundo plano, al volver se compara el tiempo real y se
+  // bloquea igual antes de enseñar nada.
   useEffect(() => {
     if (!ajustes || !hayBloqueo(ajustes)) return
     let espera = 0
+    let ocultoDesde = 0
     const alCambiar = () => {
       window.clearTimeout(espera)
       if (document.hidden) {
+        ocultoDesde = Date.now()
         espera = window.setTimeout(bloquear, GRACIA_OCULTO_MS)
+        return
       }
+      if (ocultoDesde && Date.now() - ocultoDesde >= GRACIA_OCULTO_MS) bloquear()
+      ocultoDesde = 0
     }
     document.addEventListener('visibilitychange', alCambiar)
     return () => {
