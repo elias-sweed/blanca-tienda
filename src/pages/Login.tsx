@@ -10,6 +10,25 @@ interface EstadoNavegacion {
   desde?: string
 }
 
+function IconoOjo({ oculto }: { oculto: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <path d="M2.1 12s3.6-6.5 9.9-6.5S21.9 12 21.9 12s-3.6 6.5-9.9 6.5S2.1 12 2.1 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      {oculto && <path d="m3 3 18 18" />}
+    </svg>
+  )
+}
+
 /**
  * Pantalla de acceso con la cuenta maestra de Supabase.
  *
@@ -24,6 +43,7 @@ export default function Login() {
 
   const [correo, setCorreo] = useState('')
   const [contrasena, setContrasena] = useState('')
+  const [verContrasena, setVerContrasena] = useState(false)
   const [error, setError] = useState('')
   const [ocupado, setOcupado] = useState(false)
   const [recuperando, setRecuperando] = useState(false)
@@ -67,9 +87,9 @@ export default function Login() {
 
   if (!configurado) {
     return (
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 px-6 text-center">
+      <div className="relative flex min-h-dvh flex-col overflow-y-auto">
         <FondoNeon />
-        <div className="relative z-10 flex flex-col gap-2">
+        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-5 py-8 text-center">
           <h1 className="text-xl font-bold text-title">Falta conectar la nube</h1>
           <p className="text-sm text-fg-mute">
             Pide que se revise la configuración del acceso. Mientras tanto, no se puede entrar.
@@ -80,103 +100,145 @@ export default function Login() {
   }
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6 py-10">
+    <div className="relative flex min-h-dvh flex-col overflow-y-auto">
       <FondoNeon />
 
-      <div className="relative z-10 flex flex-col items-center gap-3 text-center">
-        <img
-          src="/pwa-192.png"
-          alt=""
-          className="h-20 w-20 rounded-full border-2 border-line-active/60"
-        />
-        <h1 className="text-3xl font-bold text-title">Blanca Tienda</h1>
-        <p className="text-sm text-fg-mute">
-          {recuperando ? 'Escribe tu correo para recuperar tu acceso.' : 'Ingresa para ver tu tienda.'}
-        </p>
-      </div>
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-5 pb-[calc(2rem_+_env(safe-area-inset-bottom))] pt-[calc(2rem_+_env(safe-area-inset-top))]">
+        <header className="flex flex-col items-center gap-3 text-center">
+          <img
+            src="/blanca-login.jpg"
+            alt="Blanca"
+            width={600}
+            height={800}
+            loading="eager"
+            decoding="async"
+            className="h-24 w-24 rounded-full border-2 border-line-active/60 object-cover object-[50%_35%] shadow-sm ring-4 ring-cta/10"
+          />
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold tracking-tight text-title sm:text-3xl">
+              Blanca Tienda
+            </h1>
+            <p className="text-sm text-fg-mute">
+              {recuperando
+                ? 'Escribe tu correo para recuperar tu acceso.'
+                : 'Ingresa para ver tu tienda.'}
+            </p>
+          </div>
+        </header>
 
-      {recuperando ? (
-        <form className="relative z-10 flex flex-col gap-4" onSubmit={enviarEnlace}>
-          <Input
-            label="Correo"
-            name="correo-recuperar"
-            type="email"
-            inputMode="email"
-            autoComplete="username"
-            placeholder="tucorreo@ejemplo.com"
-            value={correo}
-            onChange={(e) => setCorreo(e.target.value)}
-            disabled={ocupado || enviado}
-          />
-          {error && (
-            <p role="alert" className="text-sm font-semibold text-danger">
-              {error}
-            </p>
-          )}
-          {enviado ? (
-            <p className="text-sm font-semibold text-success">
-              Revisa tu correo. Abre el enlace desde este mismo teléfono.
-            </p>
-          ) : (
-            <Button size="lg" type="submit" disabled={ocupado}>
-              {ocupado ? 'Enviando...' : 'Enviar enlace'}
+        {recuperando ? (
+          <form
+            className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5"
+            onSubmit={enviarEnlace}
+          >
+            <Input
+              label="Correo"
+              name="correo-recuperar"
+              type="email"
+              inputMode="email"
+              enterKeyHint="send"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="tucorreo@ejemplo.com"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              disabled={ocupado || enviado}
+            />
+            {error && (
+              <p role="alert" className="text-sm font-semibold text-danger">
+                {error}
+              </p>
+            )}
+            {enviado ? (
+              <p className="rounded-xl border border-success/40 bg-success/10 px-3 py-2 text-sm font-semibold text-success">
+                Revisa tu correo. Abre el enlace desde este mismo teléfono.
+              </p>
+            ) : (
+              <Button size="lg" type="submit" disabled={ocupado}>
+                {ocupado ? 'Enviando...' : 'Enviar enlace'}
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => {
+                setRecuperando(false)
+                setError('')
+                setEnviado(false)
+              }}
+            >
+              Volver
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => {
-              setRecuperando(false)
-              setError('')
-              setEnviado(false)
-            }}
+          </form>
+        ) : (
+          <form
+            className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5"
+            onSubmit={entrar}
           >
-            Volver
-          </Button>
-        </form>
-      ) : (
-        <form className="relative z-10 flex flex-col gap-4" onSubmit={entrar}>
-          <Input
-            label="Correo"
-            name="correo"
-            type="email"
-            inputMode="email"
-            autoComplete="username"
-            placeholder="tucorreo@ejemplo.com"
-            value={correo}
-            onChange={(e) => setCorreo(e.target.value)}
-            disabled={ocupado}
-          />
-          <Input
-            label="Contraseña"
-            name="contrasena"
-            type="password"
-            autoComplete="current-password"
-            placeholder="Tu contraseña"
-            value={contrasena}
-            onChange={(e) => setContrasena(e.target.value)}
-            disabled={ocupado}
-          />
-          {error && (
-            <p role="alert" className="text-sm font-semibold text-danger">
-              {error}
-            </p>
-          )}
-          <Button size="lg" type="submit" disabled={ocupado}>
-            {ocupado ? 'Entrando...' : 'Entrar'}
-          </Button>
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => {
-              setRecuperando(true)
-              setError('')
-            }}
-          >
-            Olvidé mi contraseña
-          </Button>
-        </form>
-      )}
+            <Input
+              label="Correo"
+              name="correo"
+              type="email"
+              inputMode="email"
+              enterKeyHint="next"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="tucorreo@ejemplo.com"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              disabled={ocupado}
+            />
+            <Input
+              label="Contraseña"
+              name="contrasena"
+              type={verContrasena ? 'text' : 'password'}
+              enterKeyHint="go"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="Tu contraseña"
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
+              disabled={ocupado}
+              trailing={
+                <button
+                  type="button"
+                  onClick={() => setVerContrasena((visible) => !visible)}
+                  aria-label={verContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-pressed={verContrasena}
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-fg-mute transition-[transform,opacity] duration-150 hover:text-fg active:scale-95 active:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-active/60"
+                >
+                  <IconoOjo oculto={verContrasena} />
+                </button>
+              }
+            />
+            {error && (
+              <p role="alert" className="text-sm font-semibold text-danger">
+                {error}
+              </p>
+            )}
+            <Button size="lg" type="submit" disabled={ocupado}>
+              {ocupado ? 'Entrando...' : 'Entrar'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => {
+                setRecuperando(true)
+                setError('')
+                setVerContrasena(false)
+              }}
+            >
+              Olvidé mi contraseña
+            </Button>
+          </form>
+        )}
+      </div>
     </div>
   )
 }

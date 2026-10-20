@@ -22,9 +22,9 @@ export default function Recuperar() {
   }, [estadoSesion, navigate])
 
   return (
-    <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 px-6 text-center">
+    <div className="relative flex min-h-dvh flex-col overflow-y-auto">
       <FondoNeon />
-      <div className="relative z-10 flex flex-col gap-4">
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-5 py-8 text-center">
         {estadoSesion === 'cargando' && <LoadingState rows={2} label="Revisando el enlace..." />}
 
         {estadoSesion === 'sin-sesion' && (

@@ -13,7 +13,7 @@ export default defineConfig({
       registerType: 'prompt',
       // El registro lo hace usePWA; evitamos inyectarlo dos veces.
       injectRegister: false,
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'blanca-login.jpg'],
       manifest: {
         name: 'Blanca Tienda',
         short_name: 'Blanca',

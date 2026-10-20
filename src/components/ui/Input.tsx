@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from 'react'
+import type { InputHTMLAttributes, ReactNode } from 'react'
 import { HelpTooltip } from './HelpTooltip'
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
@@ -7,9 +7,11 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
   error?: string
   /** Ayuda opcional: muestra un botón "?" al lado del título del campo. */
   help?: string
+  /** Control opcional dentro del campo, por ejemplo "ver contraseña". */
+  trailing?: ReactNode
 }
 
-export function Input({ label, error, help, className = '', id, ...props }: Props) {
+export function Input({ label, error, help, trailing, className = '', id, ...props }: Props) {
   const inputId = id ?? props.name ?? label
   return (
     <div className="flex flex-col gap-1">
@@ -20,17 +22,24 @@ export function Input({ label, error, help, className = '', id, ...props }: Prop
         {label}
         {help && <HelpTooltip text={help} />}
       </label>
-      <input
-        id={inputId}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${inputId}-error` : undefined}
-        className={`w-full rounded-xl border bg-inset px-4 py-3 text-base font-semibold text-fg placeholder:text-fg-mute transition-colors duration-150 focus:outline-none ${
-          error
-            ? 'border-danger focus:border-danger focus:ring-2 focus:ring-danger/40'
-            : 'border-line focus:border-line-active focus:ring-2 focus:ring-line-active/30'
-        } ${className}`}
-        {...props}
-      />
+      <div className="relative">
+        <input
+          id={inputId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${inputId}-error` : undefined}
+          className={`w-full rounded-xl border bg-inset px-4 py-3 text-base font-semibold text-fg placeholder:text-fg-mute transition-colors duration-150 focus:outline-none ${
+            trailing ? 'pr-14' : ''
+          } ${
+            error
+              ? 'border-danger focus:border-danger focus:ring-2 focus:ring-danger/40'
+              : 'border-line focus:border-line-active focus:ring-2 focus:ring-line-active/30'
+          } ${className}`}
+          {...props}
+        />
+        {trailing && (
+          <div className="absolute inset-y-0 right-1 flex items-center">{trailing}</div>
+        )}
+      </div>
       {error && (
         <p id={`${inputId}-error`} className="text-sm font-semibold text-danger">
           {error}
