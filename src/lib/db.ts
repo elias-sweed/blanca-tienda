@@ -21,6 +21,13 @@ const db = new Dexie('tienda-blanca') as Dexie & {
   cashClosures: EntityTable<CashClosure, 'id'>
   compras: EntityTable<Compra, 'id'>
   syncQueue: EntityTable<SyncQueueItem, 'id'>
+  syncMeta: EntityTable<SyncMeta, 'tabla'>
+}
+
+/** Hasta qué momento se bajaron los cambios de cada tabla remota. */
+export interface SyncMeta {
+  tabla: string
+  lastPulledAt: string
 }
 
 db.version(1).stores({
@@ -60,6 +67,12 @@ db.version(4).stores({
 // Migración aditiva: solo agrega la tabla, no toca los datos existentes.
 db.version(5).stores({
   compras: 'id, fecha, mayorista, productoId, estado',
+})
+
+// v6: `syncMeta` guarda la última fecha bajada de cada tabla de Supabase.
+// Es solo local: no se sincroniza ni se muestra. Migración aditiva.
+db.version(6).stores({
+  syncMeta: 'tabla',
 })
 
 export { db }

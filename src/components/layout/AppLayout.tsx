@@ -7,6 +7,7 @@ import { InvitacionBloqueo } from '../InvitacionBloqueo'
 import { SeguridadBloqueo } from '../SeguridadBloqueo'
 import { Tutorial } from '../Tutorial'
 import { useAuth } from '../../context/authContext'
+import { useSyncApp } from '../../context/syncContext'
 import { useOnlineStatus } from '../../hooks/useOnlineStatus'
 import { tutorialNoVisto } from '../tutorialStorage'
 import { leerPerfil, type Perfil } from '../../utils/perfil'
@@ -33,6 +34,26 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
   const online = useOnlineStatus()
   const navigate = useNavigate()
   const { bloquear, cerrarSesion, bloqueoConfigurado } = useAuth()
+  const { estado: syncEstado, ultimoError, sincronizarAhora } = useSyncApp()
+
+  const syncTexto =
+    syncEstado === 'sincronizando'
+      ? 'Guardando en la nube...'
+      : syncEstado === 'al-dia'
+        ? 'Guardado en la nube'
+        : syncEstado === 'sin-conexion'
+          ? 'Sin conexión'
+          : syncEstado === 'error'
+            ? 'No se pudo guardar'
+            : 'Preparando la nube'
+  const syncColor =
+    syncEstado === 'sincronizando'
+      ? 'bg-warning'
+      : syncEstado === 'al-dia'
+        ? 'bg-success'
+        : syncEstado === 'error'
+          ? 'bg-danger'
+          : 'bg-fg-mute'
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000)
@@ -73,6 +94,22 @@ export function AppLayout({ title, children }: { title: string; children: ReactN
                   <div className="border-b border-line px-3 pb-2 pt-1">
                     <p className="truncate text-sm font-bold text-title">{perfil.nombre || 'Mi perfil'}</p>
                     <p className="truncate text-xs text-fg-mute">Blanca Tienda</p>
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-fg-mute">
+                      <span
+                        aria-hidden="true"
+                        className={`h-2 w-2 shrink-0 rounded-full ${syncColor}`}
+                      />
+                      <span title={ultimoError || undefined}>{syncTexto}</span>
+                      {syncEstado === 'error' && (
+                        <button
+                          type="button"
+                          onClick={() => void sincronizarAhora()}
+                          className="ml-auto font-bold text-danger hover:underline"
+                        >
+                          Reintentar
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
