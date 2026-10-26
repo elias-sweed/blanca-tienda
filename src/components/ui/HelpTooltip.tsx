@@ -58,9 +58,7 @@ export function HelpTooltip({ text }: Props) {
         }}
         aria-label="Ayuda"
         aria-expanded={open}
-        className={`ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-line-active/60 bg-surface text-xs font-bold leading-none text-cta-text transition-colors duration-150 hover:border-line-active ${
-          open ? '' : 'animate-ayuda-latido'
-        }`}
+        className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-line-active/60 bg-surface text-xs font-bold leading-none text-cta-text"
       >
         ?
       </button>

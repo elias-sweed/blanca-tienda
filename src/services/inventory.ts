@@ -118,6 +118,30 @@ export async function createProduct(data: {
   return { product, variants }
 }
 
+/** Actualiza talla y color. No toca la cantidad: eso se hace con Ajustar. */
+export async function updateVariant(variantId: string, data: { size?: string; color?: string }) {
+  const now = nowISO()
+  await db.transaction('rw', db.productVariants, async () => {
+    const variant = await db.productVariants.get(variantId)
+    if (!variant) throw new Error('Producto no encontrado')
+
+    const size = data.size?.trim() || undefined
+    const color = data.color?.trim() || undefined
+    const hermanas = await db.productVariants.where('productId').equals(variant.productId).toArray()
+    const duplicada = hermanas.find(
+      (v) => v.id !== variantId && (v.size ?? '') === (size ?? '') && (v.color ?? '') === (color ?? ''),
+    )
+    if (duplicada) throw new Error('Ese producto ya tiene esa talla y color')
+
+    await db.productVariants.update(variantId, {
+      size,
+      color,
+      updatedAt: now,
+      syncStatus: 'pending',
+    })
+  })
+}
+
 /** Actualiza los datos del producto. No toca las variantes ni el stock. */
 export async function updateProduct(productId: string, data: {
   name: string

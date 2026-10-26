@@ -62,10 +62,6 @@
 
   /* ---- Tipografía ---- */
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-
-  /* ---- Animaciones: solo transform y opacity (compositor) ---- */
-  --animate-pulse-soft: pulse-soft 1.8s ease-in-out infinite;
-  --animate-ayuda-latido: ayuda-latido 2.4s ease-in-out infinite;
 }
 
 /* Tema claro real (no inversión): mismos nombres, valores claros.
@@ -113,29 +109,6 @@ html[data-tema="claro"] {
   --color-info: #316bb4;
 
   --color-on-fill: #ffffff;
-}
-
-@keyframes pulse-soft {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
-/* Latido del botón de ayuda "?": solo opacidad (ni layout ni paint).
-   Ciclo lento de 2.4 s para que llame la atención sin distraer y sin
-   coste notable en un teléfono antiguo. */
-@keyframes ayuda-latido {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
 }
 
 /* Respeta la preferencia del sistema: sin movimiento, sin coste de GPU. */

@@ -35,13 +35,12 @@ export function SuccessState({ message, seconds = 1.6, onDone }: Props) {
     <Portal>
       <div
         className="fixed inset-0 flex flex-col items-center justify-center gap-4 bg-bg/95"
-        style={{ zIndex: Z_OVERLAY + 10, animation: 'pulse-soft 600ms ease-out 1' }}
+        style={{ zIndex: Z_OVERLAY + 10 }}
         role="status"
         aria-live="assertive"
       >
         <span
           className="flex h-28 w-28 items-center justify-center rounded-full border-4 border-success bg-success/15 text-6xl font-bold text-success"
-          style={{ willChange: 'transform, opacity' }}
         >
           ✓
         </span>

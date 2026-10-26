@@ -1,11 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ErrorState } from '../components/ui/ErrorState'
 import { FilterChips } from '../components/ui/FilterChips'
-import { HelpTooltip } from '../components/ui/HelpTooltip'
 import { Input } from '../components/ui/Input'
 import { LoadingState } from '../components/ui/LoadingState'
 import { Modal } from '../components/ui/Modal'
@@ -16,7 +14,15 @@ import { StepperInput } from '../components/ui/StepperInput'
 import { useToast } from '../components/ui/ToastContext'
 import { useQueryState } from '../hooks/useQueryState'
 import { db } from '../lib/db'
-import { addVariant, adjustStock, createProduct, updateProduct, type ProductVariantInput } from '../services/inventory'
+import {
+  addVariant,
+  adjustStock,
+  createProduct,
+  setProductActive,
+  updateProduct,
+  updateVariant,
+  type ProductVariantInput,
+} from '../services/inventory'
 import type { InventoryMovement, Product, ProductVariant } from '../types/models'
 import { calcularPaginas, paginar } from '../utils/paginacion'
 import { formatearFechaCorta } from '../utils/compra'
@@ -47,17 +53,83 @@ function describeVariant(v: ProductVariant): string {
   return [v.size && `Talla ${v.size}`, v.color].filter(Boolean).join(' · ') || 'Única'
 }
 
+function resumenVariantes(variants: ProductVariant[]): string {
+  if (variants.length === 0) return 'Sin talla ni color'
+  if (variants.length === 1) return describeVariant(variants[0])
+  return variants.map(describeVariant).join(' · ')
+}
+
+function IconoLapiz() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+      <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m13.5 6.5 3 3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function IconoBasura() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+      <path d="M5 7h14" strokeLinecap="round" />
+      <path d="M10 7V5h4v2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 7v12a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function IconoAjustar() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+      <path d="M4 8h16M4 16h16" strokeLinecap="round" />
+      <circle cx="8" cy="8" r="2.2" />
+      <circle cx="16" cy="16" r="2.2" />
+    </svg>
+  )
+}
+
+function BotonIcono({
+  label,
+  onClick,
+  peligro = false,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  peligro?: boolean
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
+        peligro
+          ? 'border-danger/30 text-danger hover:bg-danger/10 active:bg-danger/20'
+          : 'border-line text-fg-soft hover:border-fg-mute hover:bg-inset hover:text-fg'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function Inventario() {
   const { show } = useToast()
   const [search, setSearch] = useState('')
+  const [categoria, setCategoria] = useState<string>('todas')
   const [orden, setOrden] = useState<OrdenInventario>('az')
   const [pagina, setPagina] = useState(1)
   const [openNew, setOpenNew] = useState(false)
   const [adjustFor, setAdjustFor] = useState<ProductVariant | null>(null)
-  const [variantFor, setVariantFor] = useState<Product | null>(null)
-  const [editFor, setEditFor] = useState<Product | null>(null)
+  const [elegirAjuste, setElegirAjuste] = useState<ProductVariant[] | null>(null)
+  const [editFor, setEditFor] = useState<{ product: Product; variants: ProductVariant[] } | null>(null)
+  const [borrarFor, setBorrarFor] = useState<Product | null>(null)
   const [showInactive, setShowInactive] = useState(false)
   const [openMovimientos, setOpenMovimientos] = useState(false)
+  const [borrando, setBorrando] = useState(false)
 
   const [productsState, retryProducts] = useQueryState(async () => {
     const all = await db.products.toArray()
@@ -71,21 +143,33 @@ export default function Inventario() {
       .sort((a, b) => a.product.name.localeCompare(b.product.name))
   }, [showInactive])
 
-  // Se conservan los últimos datos aunque falle o esté recargando: la pantalla
-  // no se vacía y la persona sigue viendo lo último válido que se cargó.
+  // Se conservan los últimos datos aunque falle o esté recargando
   const products = useMemo(() => productsState.data ?? [], [productsState.data])
   const loading = productsState.status === 'loading' && productsState.data === null
 
-  // Búsqueda difusa: ignora acentos y mayúsculas, y busca también dentro de
-  // talla, color y categoría ("negro" encuentra el polo aunque solo esté en la
-  // variante). Después manda el chip elegido: A-Z, últimos agregados o
-  // últimos modificados.
+  // Categorías únicas disponibles para el filtro
+  const categoriasDisponibles = useMemo(() => {
+    const set = new Set<string>()
+    for (const p of products) {
+      if (p.product.category?.trim()) {
+        set.add(p.product.category.trim())
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b))
+  }, [products])
+
+  // Búsqueda difusa + filtro de categoría + ordenación
   const filtered = useMemo(() => {
-    const base = rankMatches(products, search, ({ product, variants }) => [
+    let base = rankMatches(products, search, ({ product, variants }) => [
       product.name,
       product.category ?? '',
       ...variants.map((v) => `${v.size ?? ''} ${v.color ?? ''}`),
     ])
+
+    if (categoria !== 'todas') {
+      base = base.filter((p) => (p.product.category?.trim() ?? '').toLowerCase() === categoria.toLowerCase())
+    }
+
     const ordenado = [...base]
     if (orden === 'nuevos') {
       ordenado.sort((a, b) => b.product.createdAt.localeCompare(a.product.createdAt))
@@ -95,63 +179,139 @@ export default function Inventario() {
       ordenado.sort((a, b) => a.product.name.localeCompare(b.product.name))
     }
     return ordenado
-  }, [products, search, orden])
+  }, [products, search, categoria, orden])
 
-  // Paginación de 10 en 10. La página se acota a lo que existe: si la lista
-  // achica (por búsqueda o filtro), nunca se queda la pantalla en blanco.
+  // Paginación de 10 en 10
   const totalPaginas = calcularPaginas(filtered.length)
   const paginaActual = Math.min(pagina, totalPaginas)
   const paginaItems = useMemo(() => paginar(filtered, paginaActual), [filtered, paginaActual])
 
   const inactiveCount = products.filter((p) => !p.product.active || p.product.deleted).length
 
+  function pedirAjuste(variants: ProductVariant[]) {
+    if (variants.length === 0) {
+      show('Este producto no tiene una talla para ajustar', 'error')
+      return
+    }
+    if (variants.length === 1) {
+      setAdjustFor(variants[0])
+      return
+    }
+    setElegirAjuste(variants)
+  }
+
+  async function confirmarBorrado() {
+    if (!borrarFor || borrando) return
+    setBorrando(true)
+    try {
+      await setProductActive(borrarFor.id, false)
+      show('Producto eliminado')
+      setBorrarFor(null)
+    } catch (e) {
+      show(e instanceof Error ? e.message : 'No se pudo eliminar', 'error')
+    } finally {
+      setBorrando(false)
+    }
+  }
+
   return (
     <AppLayout title="Inventario">
-      <Button size="lg" className="mb-4" onClick={() => setOpenNew(true)}>
-        + Agregar producto
-      </Button>
-
-      <SearchBox
-        value={search}
-        onChange={(v) => {
-          setSearch(v)
-          setPagina(1)
-        }}
-        placeholder="Ej: polo negro"
-        results={filtered.length}
-        total={products.length}
-      />
-
-      <div className="mt-3">
-        <FilterChips<OrdenInventario>
-          titulo="Ordenar"
-          valor={orden}
+      {/* 1. PARTE DE ARRIBA: Buscar + Filtros */}
+      <div className="flex flex-col gap-2.5">
+        <SearchBox
+          value={search}
           onChange={(v) => {
-            setOrden(v)
+            setSearch(v)
             setPagina(1)
           }}
-          opciones={OPCIONES_ORDEN}
+          placeholder="Buscar por nombre, categoría, talla o color..."
+          results={filtered.length}
+          total={products.length}
         />
+
+        {/* Filtro por categorías si existen */}
+        {categoriasDisponibles.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            <span className="shrink-0 font-medium text-fg-mute">Categoría:</span>
+            <button
+              type="button"
+              onClick={() => {
+                setCategoria('todas')
+                setPagina(1)
+              }}
+              className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                categoria === 'todas'
+                  ? 'bg-fg text-surface'
+                  : 'border border-line bg-inset text-fg-soft hover:text-fg'
+              }`}
+            >
+              Todas
+            </button>
+            {categoriasDisponibles.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => {
+                  setCategoria(cat)
+                  setPagina(1)
+                }}
+                className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                  categoria.toLowerCase() === cat.toLowerCase()
+                    ? 'bg-fg text-surface'
+                    : 'border border-line bg-inset text-fg-soft hover:text-fg'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Filtros de orden y enlaces secundarios */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <FilterChips<OrdenInventario>
+            titulo="Ordenar"
+            valor={orden}
+            onChange={(v) => {
+              setOrden(v)
+              setPagina(1)
+            }}
+            opciones={OPCIONES_ORDEN}
+          />
+
+          <div className="flex items-center gap-3 text-xs">
+            {inactiveCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowInactive(!showInactive)}
+                className="font-semibold text-fg-mute hover:text-fg transition-colors"
+              >
+                {showInactive ? 'Ocultar' : 'Mostrar'} bajas ({inactiveCount})
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setOpenMovimientos(true)}
+              className="font-bold text-cta-text hover:underline"
+            >
+              Historial
+            </button>
+          </div>
+        </div>
       </div>
 
-      {inactiveCount > 0 && (
-        <button
-          onClick={() => setShowInactive(!showInactive)}
-          className="mt-3 text-xs font-semibold text-fg-mute transition-colors duration-150 hover:text-fg-soft"
-        >
-          {showInactive ? 'Ocultar' : 'Mostrar'} productos dados de baja ({inactiveCount})
-        </button>
-      )}
+      {/* 2. ABAJO AL LADO DERECHO: Botón de Agregar producto */}
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-xs font-semibold text-fg-mute">
+          {filtered.length} {filtered.length === 1 ? 'producto' : 'productos'}
+        </span>
+        <Button size="md" onClick={() => setOpenNew(true)}>
+          + Agregar producto
+        </Button>
+      </div>
 
-      <button
-        onClick={() => setOpenMovimientos(true)}
-        className="mt-3 self-start text-xs font-bold text-cta-text transition-colors duration-150 hover:text-cta-hover"
-      >
-        Ver mis agregados y compras →
-      </button>
-
-      <div className="mt-4 flex flex-col gap-3">
-        {/* Los 5 estados de la interfaz: cargando, error, vacío, sin resultados y contenido. */}
+      {/* 3. ABAJO: PRODUCTOS EN FILAS */}
+      <div className="mt-3 flex flex-col gap-2">
         {loading && <LoadingState rows={4} label="Cargando inventario..." />}
 
         {productsState.status === 'error' && (
@@ -178,82 +338,90 @@ export default function Inventario() {
         {!loading && productsState.status === 'ready' && products.length > 0 && filtered.length === 0 && (
           <EmptyState
             icon="🔍"
-            title={`No encontramos "${search.trim()}"`}
-            description="Revisa la ortografía o intenta con otra palabra."
+            title={`No encontramos "${search.trim() || categoria}"`}
+            description="Revisa la ortografía o intenta con otra palabra o filtro."
             action={
-              <Button variant="secondary" size="md" onClick={() => setSearch('')}>
-                Borrar búsqueda
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => {
+                  setSearch('')
+                  setCategoria('todas')
+                }}
+              >
+                Borrar filtros
               </Button>
             }
           />
         )}
+
         {paginaItems.map(({ product, variants, quantity }) => {
           const inactivo = !product.active || product.deleted
-          const bajo = quantity <= product.stockMin
-          return (
-            <Card key={product.id} className={inactivo ? 'opacity-60' : ''}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-lg font-bold">{product.name}</p>
-                  <p className="text-sm text-fg-mute">
-                    {variants.length > 0 ? `${variants.length} ${variants.length === 1 ? 'talla o color' : 'tallas o colores'}` : 'Sin tallas ni colores'}
-                    {product.category ? ` · ${product.category}` : ''}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className={`text-2xl font-bold ${bajo ? 'text-danger' : 'text-fg'}`}>{quantity}</p>
-                  <p className="text-xs text-fg-mute">disponibles</p>
-                </div>
-              </div>
+          const sinStock = quantity <= 0
+          const bajoStock = !sinStock && quantity <= product.stockMin
 
-              <div className="mt-3 flex items-center justify-between text-sm text-fg-soft">
-                <span>Precio: S/ {product.price.toFixed(2)}</span>
-                {inactivo ? (
-                  <span className="text-fg-mute">Dado de baja</span>
-                ) : (
-                  <span className="flex items-center gap-0.5">
-                    {bajo ? (
-                      <span className="text-danger">Quedan pocas</span>
-                    ) : (
-                      <span className="text-fg-mute">Aviso con {product.stockMin} o menos</span>
-                    )}
-                    <HelpTooltip text="Es la cantidad desde la que quieres que te avisemos. Si quedan esas unidades o menos, te avisamos en Inicio y en Ventas." />
-                  </span>
+          return (
+            <div
+              key={product.id}
+              className={`flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3.5 transition-all shadow-xs ${
+                inactivo ? 'opacity-55 bg-surface/50' : ''
+              }`}
+            >
+              {/* Información importante a la izquierda */}
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="truncate text-base font-bold text-title">{product.name}</span>
+                  {product.category && (
+                    <span className="rounded-md border border-line bg-inset px-1.5 py-0.5 text-[11px] font-medium text-fg-mute">
+                      {product.category}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap text-sm">
+                  <span className="font-bold text-fg">S/ {product.price.toFixed(2)}</span>
+                  <span className="text-fg-mute">·</span>
+                  {inactivo ? (
+                    <span className="rounded-md bg-danger/10 px-1.5 py-0.5 text-xs font-semibold text-danger">
+                      Dado de baja
+                    </span>
+                  ) : sinStock ? (
+                    <span className="rounded-md bg-danger/10 px-1.5 py-0.5 text-xs font-semibold text-danger">
+                      Sin stock (0 uds)
+                    </span>
+                  ) : bajoStock ? (
+                    <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-xs font-semibold text-amber-600">
+                      Poco stock ({quantity} {quantity === 1 ? 'ud' : 'uds'})
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-fg-soft">
+                      {quantity} {quantity === 1 ? 'ud' : 'uds'}
+                    </span>
+                  )}
+                </div>
+
+                {variants.length > 0 && (
+                  <p className="truncate text-xs text-fg-mute">
+                    {resumenVariantes(variants)}
+                  </p>
                 )}
               </div>
 
-              {variants.length > 0 && (
-                <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
-                  {variants.map((v) => (
-                    <div key={v.id} className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-fg-soft">{describeVariant(v)}</p>
-                        <p className={`text-xs ${v.quantity <= 0 ? 'text-danger' : 'text-fg-mute'}`}>
-                          {v.quantity} {v.quantity === 1 ? 'unidad' : 'unidades'}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Button variant="secondary" size="md" onClick={() => setAdjustFor(v)}>
-                          Ajustar
-                        </Button>
-                        <HelpTooltip text="Úsalo cuando cuentes y te dé un número distinto al de la app." />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
+              {/* Iconos de acciones a la derecha: Editar, Borrar, Ajustar */}
               {!inactivo && (
-                <div className="mt-3 flex gap-2">
-                  <Button variant="ghost" size="md" className="flex-1" onClick={() => setEditFor(product)}>
-                    Editar
-                  </Button>
-                  <Button variant="ghost" size="md" className="flex-1" onClick={() => setVariantFor(product)}>
-                    + Agregar talla / color
-                  </Button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <BotonIcono label="Editar producto" onClick={() => setEditFor({ product, variants })}>
+                    <IconoLapiz />
+                  </BotonIcono>
+                  <BotonIcono label="Eliminar producto" peligro onClick={() => setBorrarFor(product)}>
+                    <IconoBasura />
+                  </BotonIcono>
+                  <BotonIcono label="Ajustar stock" onClick={() => pedirAjuste(variants)}>
+                    <IconoAjustar />
+                  </BotonIcono>
                 </div>
               )}
-            </Card>
+            </div>
           )
         })}
       </div>
@@ -271,24 +439,61 @@ export default function Inventario() {
         }}
       />
 
-      <NewVariantModal
-        product={variantFor}
-        onClose={() => setVariantFor(null)}
-        onDone={() => {
-          show('Se agregó la talla o color')
-          setVariantFor(null)
-        }}
-      />
+      <Modal
+        open={!!elegirAjuste}
+        title="¿Cuál quieres ajustar?"
+        onClose={() => setElegirAjuste(null)}
+      >
+        <div className="flex flex-col gap-2">
+          {(elegirAjuste ?? []).map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => {
+                setElegirAjuste(null)
+                setAdjustFor(v)
+              }}
+              className="flex items-center justify-between rounded-xl border border-line bg-inset px-3 py-3 text-left"
+            >
+              <span className="font-semibold text-fg">{describeVariant(v)}</span>
+              <span className="text-sm text-fg-mute">
+                {v.quantity} {v.quantity === 1 ? 'ud' : 'uds'}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Modal>
 
       <EditProductModal
-        key={editFor?.id ?? 'sin-producto'}
-        product={editFor}
+        key={editFor?.product.id ?? 'sin-producto'}
+        product={editFor?.product ?? null}
+        variants={editFor?.variants ?? []}
         onClose={() => setEditFor(null)}
         onDone={() => {
           show('Producto actualizado')
           setEditFor(null)
         }}
       />
+
+      {/* Modal de confirmación al eliminar */}
+      <Modal open={!!borrarFor} title="Eliminar producto" onClose={() => setBorrarFor(null)}>
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-fg">
+            ¿Estás seguro de que deseas eliminar <strong className="font-bold text-title">{borrarFor?.name}</strong>?
+          </p>
+          <p className="text-xs text-fg-mute">
+            Este producto dejará de aparecer en la sección de ventas. Podrás ver los dados de baja activando la opción correspondiente.
+          </p>
+          <div className="mt-2 flex flex-col gap-2">
+            <Button variant="danger" size="lg" onClick={() => void confirmarBorrado()} disabled={borrando}>
+              {borrando ? 'Eliminando...' : 'Sí, eliminar'}
+            </Button>
+            <Button variant="ghost" size="lg" onClick={() => setBorrarFor(null)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <MovimientosModal open={openMovimientos} onClose={() => setOpenMovimientos(false)} />
     </AppLayout>
@@ -552,69 +757,9 @@ function AdjustModal({ variant, onClose, onDone }: {
   )
 }
 
-function NewVariantModal({ product, onClose, onDone }: {
+function EditProductModal({ product, variants, onClose, onDone }: {
   product: Product | null
-  onClose: () => void
-  onDone: () => void
-}) {
-  const { show } = useToast()
-  const [size, setSize] = useState('')
-  const [color, setColor] = useState('')
-  const [qty, setQty] = useState('0')
-  const [busy, setBusy] = useState(false)
-
-  async function save() {
-    if (busy || !product) return
-    if (!size.trim() && !color.trim()) {
-      show('Escribe al menos la talla o el color', 'error')
-      return
-    }
-    const check = validateQuantity(qty, { etiqueta: 'la cantidad', min: 0 })
-    if (!check.ok) {
-      show(check.error, 'error')
-      return
-    }
-    setBusy(true)
-    try {
-      await addVariant(product.id, { size, color, quantity: check.value })
-      onDone()
-      setSize(''); setColor(''); setQty('0')
-    } catch (e) {
-      show(e instanceof Error ? e.message : 'No se pudo agregar la talla o color', 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Modal open={!!product} title={`Agregar talla a: ${product?.name ?? ''}`} onClose={onClose}>
-      <div className="flex flex-col gap-3">
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="Talla" value={size} onChange={(e) => setSize(e.target.value)} placeholder="L" />
-          <Input label="Color" value={color} onChange={(e) => setColor(e.target.value)} placeholder="Azul" />
-        </div>
-        <QuickPicks
-          etiqueta="Colores frecuentes"
-          opciones={COLORES_SUGERIDOS}
-          valor={color}
-          onElegir={setColor}
-        />
-        <Input
-          label="Cantidad inicial"
-          type="text"
-          inputMode="numeric"
-          enterKeyHint="done"
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-        />
-        <Button size="lg" onClick={save} disabled={busy}>Agregar talla o color</Button>
-      </div>
-    </Modal>
-  )
-}
-
-function EditProductModal({ product, onClose, onDone }: {
-  product: Product | null
+  variants: ProductVariant[]
   onClose: () => void
   onDone: () => void
 }) {
@@ -624,12 +769,26 @@ function EditProductModal({ product, onClose, onDone }: {
   const [name, setName] = useState(product?.name ?? '')
   const [price, setPrice] = useState(product ? product.price.toFixed(2) : '')
   const [category, setCategory] = useState(product?.category ?? '')
+  const [drafts, setDrafts] = useState<VariantDraft[]>(() =>
+    variants.length > 0
+      ? variants.map((v) => ({
+          key: v.id,
+          size: v.size ?? '',
+          color: v.color ?? '',
+          quantity: String(v.quantity),
+        }))
+      : [newDraft()],
+  )
   const [busy, setBusy] = useState(false)
 
   const nameCheck = validateName(name, 'el nombre')
   const priceCheck = validateAmount(price, 'el precio')
   const nameError = name !== '' && !nameCheck.ok ? nameCheck.error : null
   const priceError = price !== '' && !priceCheck.ok ? priceCheck.error : null
+
+  function updateDraft(key: string, patch: Partial<VariantDraft>) {
+    setDrafts((ds) => ds.map((d) => (d.key === key ? { ...d, ...patch } : d)))
+  }
 
   async function save() {
     if (busy || !product) return
@@ -645,6 +804,15 @@ function EditProductModal({ product, onClose, onDone }: {
         price: priceCheck.ok ? priceCheck.value : 0,
         category,
       })
+
+      const idsActuales = new Set(variants.map((v) => v.id))
+      for (const d of drafts) {
+        if (idsActuales.has(d.key)) {
+          await updateVariant(d.key, { size: d.size, color: d.color })
+        } else if (d.size.trim() || d.color.trim()) {
+          await addVariant(product.id, { size: d.size, color: d.color, quantity: 0 })
+        }
+      }
       onDone()
     } catch (e) {
       show(e instanceof Error ? e.message : 'No se pudo guardar', 'error')
@@ -686,9 +854,52 @@ function EditProductModal({ product, onClose, onDone }: {
           onElegir={setCategory}
         />
 
-        <Button size="lg" onClick={save} disabled={busy}>
-          {busy ? 'Guardando...' : 'Guardar cambios'}
-        </Button>
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-inset p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-fg-soft">Talla y color</span>
+            <button
+              type="button"
+              onClick={() => setDrafts((ds) => [...ds, newDraft()])}
+              className="text-sm font-bold text-accent-text"
+            >
+              + Agregar
+            </button>
+          </div>
+
+          {drafts.map((d, i) => (
+            <div key={d.key} className="flex flex-col gap-2">
+              {i > 0 && <div className="border-t border-line pt-2" />}
+              <div className="grid grid-cols-2 gap-2">
+                <Input label="Talla" value={d.size} onChange={(e) => updateDraft(d.key, { size: e.target.value })} placeholder="M" />
+                <Input label="Color" value={d.color} onChange={(e) => updateDraft(d.key, { color: e.target.value })} placeholder="Negro" />
+              </div>
+              <QuickPicks
+                etiqueta="Colores frecuentes"
+                opciones={COLORES_SUGERIDOS}
+                valor={d.color}
+                onElegir={(valor) => updateDraft(d.key, { color: valor })}
+              />
+              {drafts.length > 1 && !variants.some((v) => v.id === d.key) && (
+                <button
+                  type="button"
+                  onClick={() => setDrafts((ds) => ds.filter((x) => x.key !== d.key))}
+                  className="self-start text-xs font-bold text-danger"
+                >
+                  Quitar esta talla
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-2 pt-1">
+          <Button size="lg" onClick={save} disabled={busy}>
+            {busy ? 'Guardando...' : 'Guardar cambios'}
+          </Button>
+          <Button variant="ghost" size="lg" onClick={onClose} disabled={busy}>
+            Cancelar
+          </Button>
+        </div>
       </div>
     </Modal>
   )

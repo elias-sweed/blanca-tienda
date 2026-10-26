@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui/Button'
 import { Portal } from '../ui/Portal'
 import { Z_OVERLAY } from '../ui/Modal'
-import { TrueFocus } from '../ui/TrueFocus'
 import { useToast } from '../ui/ToastContext'
 import beepSound from '../../assets/Sounds/Warning/Beep.mp3'
 
@@ -50,7 +49,6 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
           // backdrop-filter: animar un filtro obliga a recomponer toda la
           // pantalla y hunde los FPS en WebViews antiguas.
           backgroundColor: `rgba(16,18,22,${desenfocado ? 0.92 : 0.7})`,
-          transition: 'background-color 150ms linear',
         }}
         onPointerDown={(e) => {
           // Solo cuenta como toque fuera lo que no pertenece al panel.
@@ -73,16 +71,8 @@ export function AbrirCajaGuia({ onAbrir }: { onAbrir: () => void }) {
             </p>
           </div>
 
-          <Button size="lg" className="w-full ring-4 ring-cta/50" onClick={onAbrir}>
-            <TrueFocus
-              sentence="Abrir caja"
-              borderColor="#ffffff"
-              fontSize="1.6rem"
-              inactiveOpacity={0.4}
-              activeColor="#ffffff"
-              animationDuration={0.6}
-              pauseBetweenAnimations={0.7}
-            />
+          <Button size="lg" className="w-full" onClick={onAbrir}>
+            Abrir caja
           </Button>
 
           <Button variant="ghost" size="md" onClick={() => navigate('/')}>

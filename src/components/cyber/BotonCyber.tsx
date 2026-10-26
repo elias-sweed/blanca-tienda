@@ -20,14 +20,12 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
  *
  * Reglas aplicadas:
  * - Sin gradientes ni brillos: sombra pequeña solo en el primario.
- * - La transición es explícita sobre `transform` y `opacity`. La clase `transition`
- *   de Tailwind incluiría `box-shadow` y `background-color`, que fuerzan repintado.
+ * - Sin transiciones de transform: en teléfonos antiguos el scale al tocar
+ *   se siente a tirones. Solo baja un poco la opacidad al pulsar.
  * - `box-shadow` es estático: nunca se anima.
- * - La respuesta táctil usa `active:scale-95` (150 ms). Los estados `:hover` se
- *   evitan porque en WebViews antiguas con pantalla táctil se quedan pegados.
+ * - Los estados `:hover` se evitan porque en WebViews antiguas con pantalla
+ *   táctil se quedan pegados.
  * - `focus-visible` con anillo de acento para navegación por teclado.
- * - `will-change: transform` queda fijo en la hoja de estilo; declarar y cancelar
- *   `will-change` por interacción genera capas nuevas y provoca jank.
  * - `memo` para que un re-render global no re-evalúe el componente.
  */
 const VARIANTS: Record<Variant, string> = {
@@ -55,8 +53,7 @@ export const BotonCyber = memo(function BotonCyber({
       type={type}
       className={[
         'rounded-xl font-bold tracking-wide',
-        'transition-[transform,opacity] duration-150 ease-out will-change-transform',
-        'active:scale-[0.97] active:opacity-90',
+        'active:opacity-90',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-active/60',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         SIZES[size],

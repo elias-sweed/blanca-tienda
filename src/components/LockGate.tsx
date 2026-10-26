@@ -1,28 +1,21 @@
 import type { ReactNode } from 'react'
 import { useAuth } from '../context/authContext'
-import { FondoNeon } from './cyber/FondoNeon'
 import { LockScreen } from './LockScreen'
-import { LoadingState } from './ui/LoadingState'
+import { PantallaMarca } from './PantallaMarca'
 
 /**
- * Muestra la pantalla de bloqueo en lugar de la app. Al bloquear, las
- * pantallas privadas se desmontan: no quedan datos visibles detrás.
+ * Si hay huella, la pide. Si no, avisa que falta configurar.
+ * Sin huella no se muestra la tienda.
  */
 export function LockGate({ children }: { children: ReactNode }) {
-  const { estadoBloqueo } = useAuth()
+  const { estadoBloqueo, ajustes } = useAuth()
 
   if (estadoBloqueo === 'cargando') {
-    return (
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-        <FondoNeon />
-        <div className="relative z-10">
-          <LoadingState rows={2} label="Revisando el bloqueo..." />
-        </div>
-      </div>
-    )
+    return <PantallaMarca titulo="Bienvenido" />
   }
 
-  if (estadoBloqueo === 'bloqueado') return <LockScreen />
+  const tieneHuella = Boolean(ajustes?.biometriaId)
+  if (!tieneHuella || estadoBloqueo === 'bloqueado') return <LockScreen />
 
   return <>{children}</>
 }

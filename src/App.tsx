@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { AuthGate } from './components/AuthGate'
 import { LockGate } from './components/LockGate'
+import { PantallaBienvenida } from './components/PantallaBienvenida'
 import { SyncProvider } from './context/SyncProvider'
 import { BottomNav } from './components/layout/BottomNav'
 import { Button } from './components/ui/Button'
@@ -54,13 +55,15 @@ function AppPrivada() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        {/* El enlace del correo deja la sesión lista; esta pantalla confirma. */}
-        <Route path="/recuperar" element={<Recuperar />} />
-        <Route path="/*" element={<AppPrivada />} />
-      </Routes>
-    </BrowserRouter>
+    <PantallaBienvenida>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          {/* El enlace del correo deja la sesión lista; esta pantalla confirma. */}
+          <Route path="/recuperar" element={<Recuperar />} />
+          <Route path="/*" element={<AppPrivada />} />
+        </Routes>
+      </BrowserRouter>
+    </PantallaBienvenida>
   )
 }

@@ -17,7 +17,7 @@ export const Skeleton = memo(function Skeleton({
   return (
     <div
       aria-hidden="true"
-      className={['animate-pulse-soft rounded-xl bg-raised', className].join(' ')}
+      className={['rounded-xl bg-raised', className].join(' ')}
       style={style}
     />
   )
